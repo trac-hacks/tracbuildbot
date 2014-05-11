@@ -9,6 +9,7 @@ Features:
 - filter of builder to view
 - link builder to source repo
 - launch builds
+- uses jsonapi(buildbot >= 0.8.1)
 
 In future:
 - timeline events
