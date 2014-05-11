@@ -1,0 +1,56 @@
+<!DOCTYPE html
+    PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:xi="http://www.w3.org/2001/XInclude"
+      xmlns:py="http://genshi.edgewall.org/">
+<xi:include href="admin.html" />
+<head>
+<title>Buildbot Configuration</title>
+</head>
+<body>
+<h2>Buildbot configuration</h2>
+<py:if test="errors">
+<div class="system-message">
+	<b>Configuration is invalid:</b>
+	<p py:for="err in errors">${err}</p>
+</div>
+</py:if>
+<form action="" method="post">
+	<fieldset>
+	<legend>Base options</legend>
+		<p>
+			<label for="base-url">Buildbot url:</label>
+			<input type="text" name="base_url" value="${options['base_url']}"/>
+		</p>
+		<p>
+			<label for="username">Buildbot login:</label>
+			<input type="text" name="username" value="${options['username']}"/>
+		</p>
+		<p>
+			<label for="password">Buildbot password:</label>
+			<input type="password" name="password" value="${options['password']}"/>
+		</p>
+	</fieldset>
+	<py:if test="projects">
+	<fieldset id="builds-wrapper">
+		<legend>Builders &amp; sources</legend>
+		<div py:for="builder in projects" class="project-wrap">
+			<div class="build-type">
+				<a href="${builder['url']}" for="build-${builder['name']}">${builder['name']}</a>
+				<py:choose>
+				    <input py:when="builder['checked']" id="build-${builder['name']}-check" type="checkbox"
+                        name="builds" value="${builder['name']}" checked="checked"/>
+				    <input py:otherwise="" id="build-${builder['name']}-notcheck" type="checkbox"
+                        name="builds" value="${builder['name']}"/>
+				    <input id="build-${builder['name']}-source" type="text"
+                        name="build_${builder['name']}_source" value="${builder['source']}"/>
+				</py:choose>
+			</div>
+		</div>
+	</fieldset>
+	</py:if>
+	<input type="submit" name="submit" value="Save"/>
+</form>
+</body>
+</html>

@@ -1,0 +1,19 @@
+fieldset label {
+	float: left;
+	margin-right: 0.5em;
+	padding-top: 0.2em;
+	text-align: right;
+	width: 25%;
+}
+div.project-wrap {
+	clear: both;
+	margin-bottom: 10px;
+}
+div.build-type {
+	clear: both;
+	margin-left: 100px;
+}
+
+div.hidden {
+	display: none;
+}

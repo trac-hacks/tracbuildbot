@@ -1,0 +1,89 @@
+#content.timeline dt.successbuild, #content.timeline dt.successful_build a {
+	background-image: url(../img/build_s.gif) !important;
+}
+#content.timeline dt.failedbuild, #content.timeline dt.failed_build a {
+	background-image: url(../img/build_f.gif) !important;
+}
+div.build_report {
+	border: 1px solid #A0A0A0;
+	font-size: 80%;
+	margin-bottom: 5px;
+	padding: 5px;
+}
+p.small {
+	color: #c1c1c1;
+	font-size: 78%;
+	margin: 0;
+}
+div.hiddenlog {
+	display: none;
+}
+dd.successful_build p {
+	margin: 0;
+	padding: 0;
+}
+dd.failed_build p {
+	margin: 0;
+	padding: 0;
+}
+div.project-header {
+	margin-top: 20px;
+	padding: 3px;
+	background: #4B4B4A url(../img/bgBuildTitle.gif) repeat-x scroll 0 0;
+	border-left: 1px solid #41403F;
+	border-right: 1px solid #41403F;
+	border-top: 1px solid #41403F;
+	color: #FFFFFF;
+	font-size: 130%;
+}
+div.inner-build {
+	padding: 5px 15px;
+	font-size: 80%;
+}
+.success {
+	padding-left: 16px;
+	background: url(../img/build_s.gif) no-repeat scroll 0 50%;
+}
+.failed {
+	padding-left: 16px;
+	background: url(../img/build_f.gif) no-repeat scroll 0 50%;
+}
+.running {
+	padding-left: 16px;
+	background: url(../img/build_r.gif) no-repeat scroll 0 50%;
+}
+.unknown {
+	padding-left: 16px;
+	background: url(../img/cancelled.gif) no-repeat scroll 0 50%;
+}
+div.build-info {
+	height: 18px; 
+	border:1px solid #ACACAE; 
+	width: 100%; 
+	font-size: 12px; 
+	text-align: left; 
+/*	float: left */
+}
+div.progress {
+	position: relative; 
+	top: -12px;
+	background-color: green; 
+	width: 0; 
+	z-index: -10;
+	height: 15px
+}
+a.stop-build {
+	display: none;
+}
+div.build-type {
+	margin-top: 10px;
+	margin-bottom: 10px;
+}
+div.build-name {
+	font-size: 14px;
+	font-weight: bold;
+}
+div.build-list {
+	margin-top: 20px;
+	margin-bottom: 20px;
+}

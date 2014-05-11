@@ -1,0 +1,70 @@
+<!DOCTYPE html
+    PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:xi="http://www.w3.org/2001/XInclude"
+      xmlns:py="http://genshi.edgewall.org/">
+  <xi:include href="layout.html" />
+  <xi:include href="macros.html" />
+<head>
+<title>Buildbot Builds</title>
+</head>
+<body>
+    <h1>Buildbot Builds:</h1>
+    <py:choose>
+        <py:when test="errors">
+            <div class="system-message">${errors}</div>
+		</py:when>
+    </py:choose>
+    <div class="build-list">
+	    <div py:for="build in builds" class="project-wrapper">
+		    <div class="project-header" style="width: 100%;">
+                ${build['name']}
+				<py:choose>
+					<py:when test="view_build_buttons">
+                        <input style="margin-left: 10px;" type="button" name="build" value="Build"
+                            onclick="location.href = '/buildbot/build/${build['name']}'"/>
+        			</py:when>
+        		</py:choose>                       
+            </div>
+            <div class="inner-build">
+				<py:choose>
+					<py:when test="build['status']">
+                        <div class="build-info">Last build <a href="${build['url']}">#${build['number']}</a>:
+                            <span class="${build['status']}">${build['status']}</span>
+                        </div>
+				        <py:choose>
+					        <py:when test="build['error']">
+                                <div class="build-info">${build['error']}
+                                    <a href="${build['error_log']}">Log</a>
+                                </div>
+        					</py:when>
+        				</py:choose>                       
+                        <br/>
+                        <div class="build-info">Started at ${build['start']}</div>
+				        <py:choose>
+					        <py:when test="build['finish']">
+                                <div class="build-info">Finished at ${build['finish']} (duration ${build['duration']})</div>
+        					</py:when>
+        				</py:choose>
+				        <py:choose>
+					        <py:when test="build['revision'] and build['source']">
+                                <div class="build-info">Revision: 
+                                    <a href="${trac_url}/browser/${build['source']}/?rev${build['revision']}">
+                                        ${build['revision']}</a>
+                                    (<a href="${trac_url}/changeset/${build['revision']}/${build['source']}"
+                                        >changeset</a>)
+                                </div>
+        					</py:when>
+        				</py:choose>                       
+
+					</py:when>
+					<py:otherwise>
+						<span>Build history is empty</span>
+					</py:otherwise>
+				</py:choose>
+			</div>
+		</div>
+	</div>
+</body>
+</html>
