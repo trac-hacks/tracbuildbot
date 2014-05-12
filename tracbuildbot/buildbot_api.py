@@ -72,6 +72,12 @@ class BuildbotConnection:
             request += "select=%s/builds/-1&" % builder
         return self._request(request)
 
+    def get_all_builds(self, builders):
+        request = "/json/builders?"
+        for builder in builders:
+            request += "select=%s/builds/_all&" % builder
+        return self._request(request)
+
     def login(self, user, password):
         self.connect_to(self.address)
         r = self._raw_request("/login?username=%s&passwd=%s" % (user, password))
