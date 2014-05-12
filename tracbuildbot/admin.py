@@ -84,7 +84,6 @@ class BuildbotAdmin(Component, BuildbotSettings):
                 req.redirect(req.href(req.path_info))
         else:
             options,errors = self._get_options(),[]
-            print("options = ", options )
         
         builders = []
         try:
