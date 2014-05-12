@@ -36,7 +36,11 @@
 				        <py:choose>
 					        <py:when test="build['error']">
                                 <div class="build-info">${build['error']}
-                                    <a href="${build['error_log']}">Log</a>
+				                    <py:choose>
+					                    <py:when test="build['error_log']">
+                                            <a href="${build['error_log']}">Log</a>
+        					            </py:when>
+        				            </py:choose>                       
                                 </div>
         					</py:when>
         				</py:choose>                       

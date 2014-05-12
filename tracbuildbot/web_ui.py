@@ -98,13 +98,14 @@ class BuildbotPage(Component, BuildbotSettings):
                 })
 
             if status == "failed":
-                build_info['error'] = ' '.join(last_build['text']),
-                error_step = last_build['results']
-                if error_step:
-                    try:
-                        build_info['error_log'] = last_build['steps'][error_step - 1]['logs'][0][1]
-                    except (IndexError, KeyError):
-                        pass
+                build_info['error'] = ', '.join(last_build['text'])
+                try:
+                    for step in last_build['steps']:
+                        if "results" in step and step["results"][0] != 0 and step["results"][0] != 3:
+                            build_info['error_log'] = step['logs'][0][1]
+                            break
+                except (IndexError, KeyError):
+                    pass
 
 
             if len(last_build['times']) > 1 and type(last_build['times'][1]) == float:
