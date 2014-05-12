@@ -75,6 +75,10 @@ class BuildbotPage(Component, BuildbotSettings):
             errors.append("Fail to get builds info: %s" % e)
             return "buildbot_builds.html", {"builds": [],"errors":errors}, None
 
+        trac_path = self.config.get('project','url')
+        if not trac_path.startswith('http'):
+            trac_path = 'http://' + trac_path
+
         builds_desc = []
         for name, builder in builds.iteritems():
             last_build = builder['builds']['-1']
@@ -102,6 +106,7 @@ class BuildbotPage(Component, BuildbotSettings):
                     except (IndexError, KeyError):
                         pass
 
+
             if len(last_build['times']) > 1 and type(last_build['times'][1]) == float:
                 build_info['finish'] = datetime.fromtimestamp(int(round(last_build['times'][1])))
                 build_info['duration'] = build_info['finish'] - build_info['start']
@@ -114,7 +119,7 @@ class BuildbotPage(Component, BuildbotSettings):
 
         return "buildbot_builds.html", {"builds": builds_desc, "errors":errors, 
                                         'view_build_buttons': add_build_buttons,
-                                        'trac_url': "http://" + self.config.get('project','url')}, None
+                                        'trac_url': trac_path}, None
 
 class BuildbotBuildHandler(Component, BuildbotSettings):
     implements(IRequestHandler)
