@@ -97,8 +97,10 @@ class BuildbotPage(Component, BuildbotSettings):
                 build_info['error'] = ' '.join(last_build['text']),
                 error_step = last_build['results']
                 if error_step:
-                    build_info['error_log'] = last_build['steps'][error_step - 1]['logs'][0][1]
-
+                    try:
+                        build_info['error_log'] = last_build['steps'][error_step - 1]['logs'][0][1]
+                    except (IndexError, KeyError):
+                        pass
 
             if len(last_build['times']) > 1 and type(last_build['times'][1]) == float:
                 build_info['finish'] = datetime.fromtimestamp(int(round(last_build['times'][1])))
