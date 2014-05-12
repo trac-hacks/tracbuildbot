@@ -50,9 +50,9 @@ class BuildbotSettings:
                 sources.update(args['page_builders'])
                 new_options['page_builders'] = args['page_builders']
             else:
-                buidler = args['page_builders']
+                builder = args['page_builders']
                 sources.add(builder)
-                new_options['page_builders'] = [buidler]
+                new_options['page_builders'] = [builder]
         else:
             new_options['page_builders'] = []
 
@@ -61,9 +61,9 @@ class BuildbotSettings:
                 sources.update(args['page_builders'])
                 new_options['timeline_builders'] = args['timeline_builders']
             else:
-                buidler = args['timeline_builders']
+                builder = args['timeline_builders']
                 sources.add(builder)
-                new_options['timeline_builders'] = [buidler]
+                new_options['timeline_builders'] = [builder]
         else:
             new_options['timeline_builders'] = []
 
