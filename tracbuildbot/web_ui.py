@@ -67,10 +67,11 @@ class BuildbotPage(Component, BuildbotSettings):
         try:
             if not options or not 'base_url' in options:
                 raise BuildbotException('Base url is required')
-            bc = BuildbotConnection(options['base_url'])
-            if not options or not 'builds' in options:
+            if not options or not 'page_builders' in options:
                 raise BuildbotException("No builds to view")
-            builds = bc.get_last_builds(options['builds'])
+
+            bc = BuildbotConnection(options['base_url'])
+            builds = bc.get_last_builds(options['page_builders'])
         except BuildbotException as e:
             errors.append("Fail to get builds info: %s" % e)
             return "buildbot_builds.html", {"builds": [],"errors":errors}, None
@@ -96,8 +97,9 @@ class BuildbotPage(Component, BuildbotSettings):
                 'status': status,
                 'start': datetime.fromtimestamp(int(round(last_build['times'][0]))),
                 'number': last_build['number'],
-                'url': "http://" + options['base_url'] + "/builders/" + name + "/builds/" + str(last_build['number']),
-                'source': options['builds'].get(name, None),
+                'url': "http://%s/builders/%s/builds/%s" %
+                        (options['base_url'], name, str(last_build['number'])),
+                'source': options['sources'].get(name, None),
                 })
 
             if status == "failed":

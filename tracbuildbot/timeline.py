@@ -44,7 +44,7 @@ class BuildbotTimeline(Component, BuildbotSettings):
             return
 
         options = self._get_options()
-        if not options.get('builds',True):
+        if not options.get('timeline_builders',True):
             return
 
         all_builds = {}
@@ -52,7 +52,7 @@ class BuildbotTimeline(Component, BuildbotSettings):
             if not options or not 'base_url' in options:
                 raise BuildbotException('Base url is required')
             bc = BuildbotConnection(options['base_url'])
-            all_builds = bc.get_all_builds(options['builds'])
+            all_builds = bc.get_all_builds(options['timeline_builders'])
         except BuildbotException as e:
             return 
 
@@ -74,7 +74,7 @@ class BuildbotTimeline(Component, BuildbotSettings):
                 event_status = "successful" if build['results'] == 0 else "failed"
 
                 data = dict({"builder": builder,
-                             "source": options['builds'].get(builder),
+                             "source": options['sources'].get(builder),
                              "num": number,
                              "url": "http://" + options['base_url'] + "/builders/"
                              + builder + "/builds/" + str(number),
@@ -112,7 +112,7 @@ class BuildbotTimeline(Component, BuildbotSettings):
             if data['source'] and "rev" in data:                
                 rev_msg = tag.div(
                     tag.a("revision", href=context.href("/browser/%s" % data['source'], rev=data['rev'])),
-                    " ",
+                    " ",    
                     tag.a("changeset", href=context.href("/changeset/%s/%s" % (data['rev'], data['source'])))
                     )
                 msg.append(rev_msg)

@@ -17,13 +17,14 @@ from trac.web import HTTPForbidden
 class BuildbotSettings:
     def _get_options(self):
         return dict({
-                'base_url':  self.config.get('buildbot','base_url'),
-                'username':  self.config.get('buildbot','username'),
-                'password':  self.config.get('buildbot','password'),
-                'builds':    dict([tuple(builder.split('='))
-                                   for builder in self.config.getlist('buildbot','builds')]
-                                  )
-        })
+                'base_url'         : self.config.get('buildbot','base_url'),
+                'username'         : self.config.get('buildbot','username'),
+                'password'         : self.config.get('buildbot','password'),
+                'page_builders'    : self.config.getlist('buildbot','page_builders'),
+                'timeline_builders': self.config.getlist('buildbot','timeline_builders'),
+                'sources'          : dict([tuple(builder.split('=')) for builder in
+                                           self.config.getlist('buildbot','builds')])
+            })
 
     def _save_options(self, args):
         errors = []
@@ -42,16 +43,33 @@ class BuildbotSettings:
             new_options['password'] = args['password']
         else:
             errors.append('Password is required')
-        if args.get('builds',False):
-            if type(args['builds']) is list:
-                new_options['builds'] = [builder + "=" + args['build_' + builder + '_source']
-                                         for builder in args['builds']]
-            else: # only one build was specified
-                new_options['builds'] = [args['builds'] + "=" +
-                                         args['build_'+ args['builds'] +'_source']]
+
+        sources = set()
+        if args.get('page_builders', False):
+            if type(args['page_builders']) is list:
+                sources.update(args['page_builders'])
+                new_options['page_builders'] = args['page_builders']
+            else:
+                buidler = args['page_builders']
+                sources.add(builder)
+                new_options['page_builders'] = [buidler]
         else:
-            # no builds was specified
-            new_options['builds'] = []
+            new_options['page_builders'] = []
+
+        if args.get('timeline_builders', False):
+            if type(args['timeline_builders']) is list:
+                sources.update(args['page_builders'])
+                new_options['timeline_builders'] = args['timeline_builders']
+            else:
+                buidler = args['timeline_builders']
+                sources.add(builder)
+                new_options['timeline_builders'] = [buidler]
+        else:
+            new_options['timeline_builders'] = []
+
+        new_options['sources'] = [builder + "=" + args[builder + '_source']
+                                    for builder in sources]
+
         if not errors:
             for key,value in new_options.items():
                 if type(value) is list:
@@ -99,10 +117,13 @@ class BuildbotAdmin(Component, BuildbotSettings):
         projects = []
         for build in builders:
             projects.append({
-                    'name': build,
-                    'url': "http://" + options['base_url'] + "/builders/" + build,
-                    'checked': build in options.get('builds',[]),
-                    'source': options['builds'].get(build, ""),
+                'name': build,
+                'url': "http://" + options['base_url'] + "/builders/" + build,
+                'page': dict({'checked':'true'})
+                        if build in options.get('page_builders',[]) else {},
+                'timeline': dict({'checked':'true'})
+                            if build in options.get('timeline_builders',[]) else {},
+                'source': options['sources'].get(build, ""),
             })
         add_stylesheet(req,'tracbuildbot/css/admin.css')
         t_data = {'options':options,'projects':projects,'errors':errors}

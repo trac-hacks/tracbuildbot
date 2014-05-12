@@ -35,19 +35,31 @@
 	<py:if test="projects">
 	<fieldset id="builds-wrapper">
 		<legend>Builders &amp; sources</legend>
-		<div py:for="builder in projects" class="project-wrap">
-			<div class="build-type">
-				<a href="${builder['url']}" for="build-${builder['name']}">${builder['name']}</a>
-				<py:choose>
-				    <input py:when="builder['checked']" id="build-${builder['name']}-check" type="checkbox"
-                        name="builds" value="${builder['name']}" checked="checked"/>
-				    <input py:otherwise="" id="build-${builder['name']}-notcheck" type="checkbox"
-                        name="builds" value="${builder['name']}"/>
+        <table class="builders-table">
+            <tr class="project-header">
+                <th>Builder</th>
+                <th>View on Page</th>
+                <th>View on Timeline</th>
+                <th>Source</th>
+            </tr>
+            <tr py:for="builder in projects">
+                <td>
+				    <a href="${builder['url']}" for="build-${builder['name']}">${builder['name']}</a>
+                </td>
+                <td>
+				    <input id="build-${builder['name']}-check" type="checkbox"
+                        name="page_builders" value="${builder['name']}" py:attrs="builder['page']"/>
+                </td>
+                <td>
+				    <input id="Checkbox1" type="checkbox"
+                        name="timeline_builders" value="${builder['name']}" py:attrs="builder['timeline']"/>
+                </td>
+                <td>
 				    <input id="build-${builder['name']}-source" type="text"
-                        name="build_${builder['name']}_source" value="${builder['source']}"/>
-				</py:choose>
-			</div>
-		</div>
+                        name="${builder['name']}_source" value="${builder['source']}"/>
+                </td>
+            </tr>
+        </table>
 	</fieldset>
 	</py:if>
 	<input type="submit" name="submit" value="Save"/>

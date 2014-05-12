@@ -17,3 +17,12 @@ div.build-type {
 div.hidden {
 	display: none;
 }
+
+.builders-table tr td {
+	text-align: center;
+}
+
+.builders-table tr th {
+	text-align: center;
+	padding: 3px;
+}
