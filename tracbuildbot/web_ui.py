@@ -82,7 +82,10 @@ class BuildbotPage(Component, BuildbotSettings):
         builds_desc = []
         for name, builder in builds.iteritems():
             last_build = builder['builds']['-1']
-            status = "unknown"
+            if 'error' in last_build:
+                builds_desc.append({'name': name})
+                continue
+            status = None
             if not 'results' in last_build or not (type(last_build['results']) == int):
                 status = "running"
             else:
