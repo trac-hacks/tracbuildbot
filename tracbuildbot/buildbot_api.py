@@ -62,7 +62,8 @@ class BuildbotConnection:
         return r
 
     def get_builders(self):
-        return self._request('/json/builders')
+        res = self._request('/json/builders')
+        return [name for name in json.loads(res.read())]
 
     def login(self, user, password):
         self.connect_to(self.address)

@@ -85,8 +85,9 @@ class BuildbotPage(Component, BuildbotSettings):
         for builder, build  in builds.iteritems():
             build['builder'] = builder
             build["source"] = options['sources'].get(builder)
-            build["url"] = ("http://%s/builders/%s/builds/%s" % 
-                (options['base_url'], builder, str(build['num'])))
+            if 'num' in build:
+                build["url"] = ("http://%s/builders/%s/builds/%s" % 
+                    (options['base_url'], builder, str(build['num'])))
 
             builds_desc.append(build)
 
