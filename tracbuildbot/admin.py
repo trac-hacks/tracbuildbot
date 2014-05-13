@@ -23,7 +23,7 @@ class BuildbotSettings:
                 'page_builders'    : self.config.getlist('buildbot','page_builders'),
                 'timeline_builders': self.config.getlist('buildbot','timeline_builders'),
                 'sources'          : dict([tuple(builder.split('=')) for builder in
-                                           self.config.getlist('buildbot','builds')]),
+                                           self.config.getlist('buildbot','sources')]),
                 'cache_dir'       : self.config.get('buildbot','cache_dir'),
             })
 
@@ -59,7 +59,7 @@ class BuildbotSettings:
 
         if args.get('timeline_builders', False):
             if type(args['timeline_builders']) is list:
-                sources.update(args['page_builders'])
+                sources.update(args['timeline_builders'])
                 new_options['timeline_builders'] = args['timeline_builders']
             else:
                 builder = args['timeline_builders']
@@ -68,8 +68,10 @@ class BuildbotSettings:
         else:
             new_options['timeline_builders'] = []
 
+        print args
         new_options['sources'] = [builder + "=" + args[builder + '_source']
                                     for builder in sources]
+        print new_options['sources'] 
 
         if args.get('cache_dir', False):
             if not args['cache_dir']:
