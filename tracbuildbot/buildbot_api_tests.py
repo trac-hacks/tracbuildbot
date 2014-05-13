@@ -40,5 +40,30 @@ for name, builder in bc.get_last_builds(builders).iteritems():
 print "LOGIN TEST:"
 print(bc.login("qwe","qwe"))
 
-print "BUILD TEST:"
-print (bc.build('runtests'))
+#print "BUILD TEST:"
+#print (bc.build('runtests'))
+
+from cache import BuildbotBuildsCache
+from datetime import datetime
+
+import os
+try:
+    os.remove(r"e:\Work\temp\runtests")
+except:
+    pass
+
+print datetime.now()
+
+cache = BuildbotBuildsCache()
+cache.connection = bc
+cache.tmp_path = r"e:\Work\temp"
+cache.get_builds("runtests")
+
+print datetime.now()
+
+cache = BuildbotBuildsCache()
+cache.connection = bc
+cache.tmp_path = r"e:\Work\temp"
+cache.get_builds("runtests")
+
+print datetime.now()

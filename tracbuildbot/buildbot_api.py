@@ -10,6 +10,7 @@ import socket
 import httplib
 import json
 import urllib
+from datetime import datetime
 
 
 def singleton(cls):
@@ -98,3 +99,41 @@ class BuildbotConnection:
         #        raise BuildbotException('Authorization failed')
         #    r = self._raw_request("/builders/%s/force" % builder, method="POST",
         #                          reason='launched from trac', forcescheduler='force')
+
+
+    def _parse_build(self, build):
+        if not 'results' in build or not (type(build['results']) == int):
+            status = "running"
+        else:
+            status = "success" if build['results'] == 0 else "failed"
+
+        data = dict({
+                'status': status,
+                'start' : datetime.fromtimestamp(int(build['times'][0])),
+                'num': build['number'],
+                })
+
+        if len(build['times']) > 1 and type(build['times'][1]) == float:
+            data['finish'] = datetime.fromtimestamp(int(build['times'][1]))
+            data['duration'] = data['finish'] - data['start']
+
+
+        for prop in build['properties']:
+            if prop[0] == 'got_revision' and prop[1] != "":
+                data["rev"] = prop[1]
+                break
+
+                if event_status == "failed":
+                    data['error'] = ', '.join(build['text'])
+                    try:
+                        for step in build['steps']:
+                            if "results" in step and step["results"][0] != 0 and step["results"][0] != 3:
+                                data['error_log'] = step['logs'][0][1]
+                                break
+                    except (IndexError, KeyError):
+                        pass
+        return data
+
+    def get_build(self, builder, num):
+        build = self._request("/json/builders/%s/builds/%d" % (builder, num))
+        return self._parse_build(build)

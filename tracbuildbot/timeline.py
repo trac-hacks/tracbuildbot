@@ -20,11 +20,16 @@ from genshi.builder import tag
 
 from admin import BuildbotSettings
 from buildbot_api import BuildbotConnection, BuildbotException
+from cache import BuildbotBuildsCache
 
 
 class BuildbotTimeline(Component, BuildbotSettings):
     """Provides timeline events"""
     implements(ITimelineEventProvider)
+
+    def __init__(self):
+        self.cache = BuildbotBuildsCache("")
+
 
     # ITimelineEventProvider methods
     def get_timeline_filters(self, req):
@@ -44,58 +49,36 @@ class BuildbotTimeline(Component, BuildbotSettings):
             return
 
         options = self._get_options()
-        if not options.get('timeline_builders',True):
+        if not options.get('timeline_builders',True) and not self.cache.tmp_path:
             return
 
         all_builds = {}
         try:
             if not options or not 'base_url' in options:
                 raise BuildbotException('Base url is required')
+
             bc = BuildbotConnection(options['base_url'])
-            all_builds = bc.get_all_builds(options['timeline_builders'])
+            
+            if self.cache.tmp_path != options['cache_dir']:
+                self.cache = BuildbotBuildsCache(options['cache_dir'])
+            self.cache.connection = bc
+
+            for builder in options['timeline_builders']:
+                all_builds[builder] = self.cache.get_builds(builder)
         except BuildbotException as e:
+            self.log.error("tracbuildbot: fail to get builds %s" % e)
             return 
 
-        trac_path = self.config.get('project','url')
-        if not trac_path.startswith('http'):
-            trac_path = 'http://' + trac_path
-
         for builder, builds in all_builds.iteritems():
-            for number, build in builds['builds']['_all'].iteritems():
-                if not 'times' in build:
-                    continue
-                if not (len(build['times']) > 1 and type(build['times'][1]) == float):
-                    continue
-                event_date = datetime.fromtimestamp(int(build['times'][1]))
-                event_date = event_date.replace(tzinfo=localtz)
+            for number, build in builds.iteritems():
+                timestamp = build['finish'].replace(tzinfo=localtz)
+                if timestamp < start or timestamp > stop: continue
 
-                if (event_date < start) or (event_date > stop): continue
-
-                event_status = "successful" if build['results'] == 0 else "failed"
-
-                data = dict({"builder": builder,
-                             "source": options['sources'].get(builder),
-                             "num": number,
-                             "url": "http://" + options['base_url'] + "/builders/"
-                             + builder + "/builds/" + str(number),
-                             })
-                for prop in build['properties']:
-                    if prop[0] == 'got_revision' and prop[1] != "":
-                        data["rev"] = prop[1]
-                        break
-
-                if event_status == "failed":
-                    data['error'] = ', '.join(build['text'])
-                    try:
-                        for step in build['steps']:
-                            if "results" in step and step["results"][0] != 0 and step["results"][0] != 3:
-                                data['error_log'] = step['logs'][0][1]
-                                break
-                    except (IndexError, KeyError):
-                        pass
-
-
-                yield event_status, event_date, 'buildbot server', data
+                build['builder'] = builder
+                build["source"] = options['sources'].get(builder)
+                build["url"] = ("http://%s/builders/%s/builds/%s" % 
+                    (options['base_url'], builder, str(number)))
+                yield build['status'], timestamp, 'buildbot server', build
 
     def render_timeline_event(self, context, field, event):
         """Display the title of the event in the given context.
