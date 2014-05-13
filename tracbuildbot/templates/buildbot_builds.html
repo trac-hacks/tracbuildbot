@@ -19,18 +19,18 @@
     <div class="build-list">
 	    <div py:for="build in builds" class="project-wrapper">
 		    <div class="project-header" style="width: 100%;">
-                ${build['name']}
+                ${build['builder']}
 				<py:choose>
 					<py:when test="view_build_buttons">
                         <input style="margin-left: 10px;" type="button" name="build" value="Build"
-                            onclick="location.href = '/buildbot/build/${build['name']}'"/>
+                            onclick="location.href = '/buildbot/build/${build['builder']}'"/>
         			</py:when>
         		</py:choose>                       
             </div>
             <div class="inner-build">
 				<py:choose>
 					<py:when test="build['status']">
-                        <div class="build-info">Last build <a href="${build['url']}">#${build['number']}</a>:
+                        <div class="build-info">Last build <a href="${build['url']}">#${build['num']}</a>:
                             <span class="${build['status']}">${build['status']}</span>
                         </div>
 				        <py:choose>

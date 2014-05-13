@@ -42,18 +42,18 @@ class BuildbotPage(Component, BuildbotSettings):
     implements(IRequestHandler,INavigationContributor)
 
     # INavigationContributor methods
-    def get_active_navigation_item(self,req):
+    def get_active_navigation_item(self, req):
         return 'buildbot'
 
-    def get_navigation_items(self,req):
+    def get_navigation_items(self, req):
         yield 'mainnav', 'buildbot', html.A('BuildBot', href=req.href.buildbot())
 
     #IRequestHandler methods
-    def match_request(self,req):
+    def match_request(self, req):
         return re.match('/buildbot/?$',req.path_info)
 
 
-    def process_request(self,req):
+    def process_request(self, req):
         add_build_buttons = False
         if req.perm.has_permission('BUILDBOT_BUILD'):
             add_build_buttons = True
@@ -71,7 +71,8 @@ class BuildbotPage(Component, BuildbotSettings):
                 raise BuildbotException("No builds to view")
 
             bc = BuildbotConnection(options['base_url'])
-            builds = bc.get_last_builds(options['page_builders'])
+            for builder in options['page_builders']:
+                builds[builder] = bc.get_build(builder, -1)
         except BuildbotException as e:
             errors.append("Fail to get builds info: %s" % e)
             return "buildbot_builds.html", {"builds": [],"errors":errors}, None
@@ -81,47 +82,13 @@ class BuildbotPage(Component, BuildbotSettings):
             trac_path = 'http://' + trac_path
 
         builds_desc = []
-        for name, builder in builds.iteritems():
-            last_build = builder['builds']['-1']
-            if 'error' in last_build:
-                builds_desc.append({'name': name})
-                continue
-            status = None
-            if not 'results' in last_build or not (type(last_build['results']) == int):
-                status = "running"
-            else:
-                status = "success" if last_build['results'] == 0 else "failed"
+        for builder, build  in builds.iteritems():
+            build['builder'] = builder
+            build["source"] = options['sources'].get(builder)
+            build["url"] = ("http://%s/builders/%s/builds/%s" % 
+                (options['base_url'], builder, str(build['num'])))
 
-            build_info = dict({
-                'name': name,
-                'status': status,
-                'start': datetime.fromtimestamp(int(round(last_build['times'][0]))),
-                'number': last_build['number'],
-                'url': "http://%s/builders/%s/builds/%s" %
-                        (options['base_url'], name, str(last_build['number'])),
-                'source': options['sources'].get(name, None),
-                })
-
-            if status == "failed":
-                build_info['error'] = ', '.join(last_build['text'])
-                try:
-                    for step in last_build['steps']:
-                        if "results" in step and step["results"][0] != 0 and step["results"][0] != 3:
-                            build_info['error_log'] = step['logs'][0][1]
-                            break
-                except (IndexError, KeyError):
-                    pass
-
-
-            if len(last_build['times']) > 1 and type(last_build['times'][1]) == float:
-                build_info['finish'] = datetime.fromtimestamp(int(round(last_build['times'][1])))
-                build_info['duration'] = build_info['finish'] - build_info['start']
-
-            for prop in  last_build['properties']:
-                if prop[0] == 'got_revision':
-                    build_info["revision"] = prop[1]
-                    break
-            builds_desc.append(build_info)
+            builds_desc.append(build)
 
         return "buildbot_builds.html", {"builds": builds_desc, "errors":errors, 
                                         'view_build_buttons': add_build_buttons,

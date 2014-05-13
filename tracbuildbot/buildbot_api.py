@@ -39,7 +39,7 @@ class BuildbotConnection:
         self.address = address
         self.connection = httplib.HTTPConnection(address)
 
-    def _raw_request(self, request_msg, method="GET", **kwagrs):
+    def _request(self, request_msg, method="GET", **kwagrs):
         if kwagrs:
             kwagrs = urllib.urlencode(kwagrs)
         else:
@@ -61,27 +61,12 @@ class BuildbotConnection:
             raise BuildbotException("Request failed (%s %s)" % (r.status, r.reason))
         return r
 
-    def _request(self, request_msg):
-        return json.loads(self._raw_request(request_msg).read())
-
     def get_builders(self):
         return self._request('/json/builders')
 
-    def get_last_builds(self, builders):
-        request = "/json/builders?"
-        for builder in builders:
-            request += "select=%s/builds/-1&" % builder
-        return self._request(request)
-
-    def get_all_builds(self, builders):
-        request = "/json/builders?"
-        for builder in builders:
-            request += "select=%s/builds/_all&" % builder
-        return self._request(request)
-
     def login(self, user, password):
         self.connect_to(self.address)
-        r = self._raw_request("/login?username=%s&passwd=%s" % (user, password))
+        r = self._request("/login?username=%s&passwd=%s" % (user, password))
         r.read()
         cookie = r.getheader('set-cookie')
         if not cookie:
@@ -92,7 +77,7 @@ class BuildbotConnection:
         return True
 
     def build(self, builder):
-        r = self._raw_request("/builders/%s/force" % builder, method="POST",
+        r = self._request("/builders/%s/force" % builder, method="POST",
                               reason='launched from trac', forcescheduler='force')
         #if r.read().find('authfail'):
         #    if not self.login(self.user, self.password):
@@ -101,39 +86,42 @@ class BuildbotConnection:
         #                          reason='launched from trac', forcescheduler='force')
 
 
-    def _parse_build(self, build):
-        if not 'results' in build or not (type(build['results']) == int):
+    def _parse_build(self, res):
+        data = json.loads(res.read())
+
+        if not 'results' in data or not (type(data['results']) == int):
             status = "running"
         else:
-            status = "success" if build['results'] == 0 else "failed"
+            status = "success" if data['results'] == 0 else "failed"
 
-        data = dict({
+        build = dict({
                 'status': status,
-                'start' : datetime.fromtimestamp(int(build['times'][0])),
-                'num': build['number'],
+                'start' : datetime.fromtimestamp(int(data['times'][0])),
+                'num': data['number'],
                 })
 
-        if len(build['times']) > 1 and type(build['times'][1]) == float:
-            data['finish'] = datetime.fromtimestamp(int(build['times'][1]))
-            data['duration'] = data['finish'] - data['start']
+        if len(data['times']) > 1 and type(data['times'][1]) == float:
+            build['finish'] = datetime.fromtimestamp(int(data['times'][1]))
+            build['duration'] = build['finish'] - build['start']
 
 
-        for prop in build['properties']:
+        for prop in data['properties']:
             if prop[0] == 'got_revision' and prop[1] != "":
-                data["rev"] = prop[1]
+                build["rev"] = prop[1]
                 break
 
-                if event_status == "failed":
-                    data['error'] = ', '.join(build['text'])
-                    try:
-                        for step in build['steps']:
-                            if "results" in step and step["results"][0] != 0 and step["results"][0] != 3:
-                                data['error_log'] = step['logs'][0][1]
-                                break
-                    except (IndexError, KeyError):
-                        pass
-        return data
+        if status == "failed":
+            build['error'] = ', '.join(data['text'])
+            try:
+                for step in data['steps']:
+                    if "results" in step and step["results"][0] != 0 and step["results"][0] != 3:
+                        build['error_log'] = step['logs'][0][1]
+                        break
+            except (IndexError, KeyError):
+                pass
+
+        return build
 
     def get_build(self, builder, num):
-        build = self._request("/json/builders/%s/builds/%d" % (builder, num))
-        return self._parse_build(build)
+        res = self._request("/json/builders/%s/builds/%d" % (builder, num))
+        return self._parse_build(res)
