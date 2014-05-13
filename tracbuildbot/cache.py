@@ -51,4 +51,5 @@ class BuildbotBuildsCache:
                 pickle.dump(build, cache_file)
                 self.cached_data[builder][num] = build
             pickle.dump(last_build, cache_file)
+            self.cached_data[builder][last_build['num']] = last_build
 
