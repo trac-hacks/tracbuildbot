@@ -31,7 +31,7 @@
 				<py:choose>
 					<py:when test="build['status']">
                         <div class="build-info">Last build <a href="${build['url']}">#${build['num']}</a>:
-                            <span class="${build['status']}">${build['status']}</span>
+                            <span class="${build['status']}_build">${build['status']}</span>
                         </div>
 				        <py:choose>
 					        <py:when test="build['error']">

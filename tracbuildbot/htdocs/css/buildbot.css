@@ -15,17 +15,6 @@ p.small {
 	font-size: 78%;
 	margin: 0;
 }
-div.hiddenlog {
-	display: none;
-}
-dd.successful_build p {
-	margin: 0;
-	padding: 0;
-}
-dd.failed_build p {
-	margin: 0;
-	padding: 0;
-}
 div.project-header {
 	margin-top: 20px;
 	padding: 3px;
@@ -40,15 +29,21 @@ div.inner-build {
 	padding: 5px 15px;
 	font-size: 80%;
 }
-.success {
+dt.success {
+	background: url(../img/build_s.gif) no-repeat scroll 0 50%;
+}
+dt.failed {
+	background: url(../img/build_f.gif) no-repeat scroll 0 50%;
+}
+.success_build {
 	padding-left: 16px;
 	background: url(../img/build_s.gif) no-repeat scroll 0 50%;
 }
-.failed {
+.failed_build {
 	padding-left: 16px;
 	background: url(../img/build_f.gif) no-repeat scroll 0 50%;
 }
-.running {
+.running_build {
 	padding-left: 16px;
 	background: url(../img/build_r.gif) no-repeat scroll 0 50%;
 }

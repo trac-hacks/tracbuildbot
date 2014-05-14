@@ -69,6 +69,8 @@ class BuildbotTimeline(Component, BuildbotSettings):
             self.log.error("tracbuildbot: fail to get builds %s" % e)
             return 
 
+        add_stylesheet(req,'tracbuildbot/css/buildbot.css')
+
         for builder, builds in all_builds.iteritems():
             for number, build in builds.iteritems():
                 timestamp = build['finish'].replace(tzinfo=localtz)
@@ -91,7 +93,7 @@ class BuildbotTimeline(Component, BuildbotSettings):
             return "Build %s #%s was %s" % (event[3]['builder'], event[3]['num'], event[0])
         elif field == 'description':
             data = event[3]
-            msg = tag.div()
+            msg = tag.span()
             if data['source'] and "rev" in data:                
                 rev_msg = tag.div(
                     tag.a("revision", href=context.href("/browser/%s" % data['source'], rev=data['rev'])),
