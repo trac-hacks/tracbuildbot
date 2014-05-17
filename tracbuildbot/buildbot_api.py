@@ -35,6 +35,10 @@ class BuildbotConnection(Singleton):
             self.address = address
             self.connection = httplib.HTTPConnection(address)
 
+    def reconnect(self):
+        self.connection = httplib.HTTPConnection(self.address)
+
+
     def _request(self, request_msg, method="GET", **kwagrs):
         if kwagrs:
             kwagrs = urllib.urlencode(kwagrs)
@@ -46,8 +50,8 @@ class BuildbotConnection(Singleton):
             self.connection.request(method, request_msg, kwagrs, self.headers)
             r = self.connection.getresponse()
         except (socket.error, httplib.CannotSendRequest, httplib.ResponseNotReady):
-            self.connect_to(self.address)
             try:
+                self.reconnect()
                 self.connection.request(method, request_msg, kwagrs, self.headers)
                 r = self.connection.getresponse()
             except (socket.error, httplib.CannotSendRequest) as e:
@@ -62,7 +66,6 @@ class BuildbotConnection(Singleton):
         return [name for name in json.loads(res.read())]
 
     def login(self, user, password):
-        self.connect_to(self.address)
         r = self._request("/login?username=%s&passwd=%s" % (user, password))
         r.read()
         cookie = r.getheader('set-cookie')
@@ -100,8 +103,6 @@ class BuildbotConnection(Singleton):
 
         if len(data['times']) > 1 and type(data['times'][1]) == float:
             build['finish'] = datetime.fromtimestamp(int(data['times'][1]))
-            #build['duration'] = build['finish'] - build['start']
-
 
         for prop in data['properties']:
             if prop[0] == 'got_revision' and prop[1] != "":
