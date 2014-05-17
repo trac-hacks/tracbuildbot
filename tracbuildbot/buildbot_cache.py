@@ -102,10 +102,10 @@ def async_buildbot_cache_init(env_path):
 def async_buildbot_cache_worker(address, builders):
     global cache
     try:
-        cache.env.log.error('cache')
+        cache.env.log.debug('cache')
         cache.connect_to(address)
         cache.cache(builders)
-        cache.env.log.error('cache finished')
+        cache.env.log.debug('cache finished')
     except BuildbotException as e:
         cache.env.log.error(e)
         raise e
