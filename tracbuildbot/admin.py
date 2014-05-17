@@ -24,7 +24,6 @@ class BuildbotSettings:
                 'timeline_builders': self.config.getlist('buildbot','timeline_builders'),
                 'sources'          : dict([tuple(builder.split('=')) for builder in
                                            self.config.getlist('buildbot','sources')]),
-                'cache_dir'       : self.config.get('buildbot','cache_dir'),
             })
 
     def _save_options(self, args):
@@ -68,16 +67,8 @@ class BuildbotSettings:
         else:
             new_options['timeline_builders'] = []
 
-        print args
         new_options['sources'] = [builder + "=" + args[builder + '_source']
                                     for builder in sources]
-        print new_options['sources'] 
-
-        if args.get('cache_dir', False):
-            if not args['cache_dir']:
-                errors.append("cache dir path is required")
-            else:
-                new_options['cache_dir'] = args['cache_dir']
 
         if not errors:
             for key,value in new_options.items():
@@ -136,6 +127,6 @@ class BuildbotAdmin(Component, BuildbotSettings):
             })
         add_stylesheet(req,'tracbuildbot/css/admin.css')
         t_data = {'options': options, 'projects' : projects,
-                  'errors' : errors,  'cache_dir': options['cache_dir']}
+                  'errors' : errors}
         return 'buildbot_admin.html',t_data
 

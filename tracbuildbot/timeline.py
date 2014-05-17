@@ -20,15 +20,15 @@ from genshi.builder import tag
 
 from admin import BuildbotSettings
 from buildbot_api import BuildbotConnection, BuildbotException
-from cache import BuildbotBuildsCache
+from buildbot_cache import DeferredBuildbotCache
 
 
 class BuildbotTimeline(Component, BuildbotSettings):
     """Provides timeline events"""
     implements(ITimelineEventProvider)
 
-    def __init__(self):
-        self.cache = BuildbotBuildsCache("")
+    def __del__(self):
+        self.cache.stop()
 
 
     # ITimelineEventProvider methods
@@ -52,35 +52,29 @@ class BuildbotTimeline(Component, BuildbotSettings):
         if not options.get('timeline_builders',True) and not self.cache.tmp_path:
             return
 
-        all_builds = {}
+        all_builds = []
         try:
             if not options or not 'base_url' in options:
                 raise BuildbotException('Base url is required')
 
-            bc = BuildbotConnection(options['base_url'])
-            
-            if self.cache.tmp_path != options['cache_dir']:
-                self.cache = BuildbotBuildsCache(options['cache_dir'])
-            self.cache.connection = bc
+            self.cache = DeferredBuildbotCache(self.env)
+            self.cache.connect_to(options['base_url'])
 
-            for builder in options['timeline_builders']:
-                all_builds[builder] = self.cache.get_builds(builder)
+            builders = options['timeline_builders']
+            self.cache.cache(builders)
+
+            all_builds = self.cache.get_builds(builders, start, stop)
         except BuildbotException as e:
             self.log.error("tracbuildbot: fail to get builds %s" % e)
             return 
 
         add_stylesheet(req,'tracbuildbot/css/buildbot.css')
-
-        for builder, builds in all_builds.iteritems():
-            for number, build in builds.iteritems():
-                timestamp = build['finish'].replace(tzinfo=localtz)
-                if timestamp < start or timestamp > stop: continue
-
-                build['builder'] = builder
-                build["source"] = options['sources'].get(builder)
-                build["url"] = ("http://%s/builders/%s/builds/%s" % 
-                    (options['base_url'], builder, str(number)))
-                yield build['status'], timestamp, 'buildbot server', build
+        for build in all_builds:
+            timestamp = datetime.fromtimestamp(build['finish']).replace(tzinfo=localtz)
+            build["source"] = options['sources'].get(build['builder'])
+            build["url"] = ("http://%s/builders/%s/builds/%s" % 
+                (options['base_url'], build['builder'], build['num']))
+            yield build['status'], timestamp, 'buildbot server', build
 
     def render_timeline_event(self, context, field, event):
         """Display the title of the event in the given context.
