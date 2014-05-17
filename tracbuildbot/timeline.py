@@ -96,9 +96,9 @@ class BuildbotTimeline(Component, BuildbotSettings):
                     )
                 msg.append(rev_msg)
 
-            if 'error' in event[3]:
+            if 'error' in event[3] and  event[3]['error']:
                 error_msg = tag.div(event[3]['error'], " ")
-                if 'error_log' in event[3]:
+                if 'error_log' in event[3] and event[3]['error_log']:
                     error_msg.append(tag.a("Log", href=event[3]['error_log']))
                 msg.append(error_msg)
             return msg
