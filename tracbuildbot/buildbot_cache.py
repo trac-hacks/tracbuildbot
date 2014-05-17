@@ -66,7 +66,6 @@ class BuildbotCache(Singleton):
                             raise BuildbotCacheException('unknown type %s - %s' % (key, val))
                 except BuildbotCacheException as e:
                     env.log.error(e)
-                    print(e)
                     continue
 
                 cursor.execute(save_build_query % (','.join(query_build.keys()),
@@ -80,10 +79,7 @@ class BuildbotCache(Singleton):
             cursor.execute(get_builds_query %
                            (start, stop, ','.join(["'%s'" % builder for builder in builders])))
             fields = get_column_names(cursor)
-            builds = []
-            for build in cursor:
-                builds.append(dict(zip(fields, build)))
-            return builds
+            return [dict(zip(fields, build)) for build in cursor]
 
     def clear_cache(self):
         with self.env.db_transaction as db:
