@@ -1,6 +1,6 @@
 from datetime import datetime, date
 import time
-from multiprocessing import Process, Queue, Value
+from multiprocessing import Pool
 
 from trac.env import Environment
 from trac.db.api import get_column_names
@@ -95,75 +95,40 @@ class BuildbotCache(Singleton):
             cursor.execute("DELETE FROM buildbot_builds")
 
 
-def async_buildbot_cache_writer_run(queue, env_path, timeout):
-    from Queue import Empty
+def async_buildbot_cache_init(env_path):
+    global cache
+    cache = BuildbotCache(Environment(env_path))
+
+def async_buildbot_cache_worker(address, builders):
+    global cache
     try:
-        env = Environment(env_path)
-        builders = []
-        cache = BuildbotCache(env)
-
-        while True:
-            try:
-                command, arg = queue.get(True, timeout.value)
-            except Empty:
-                command, arg = "cache", builders
-
-            env.log.info("%s - %s" % (command, arg))
-            if command == "cache":
-                builders = arg
-                try:
-                    cache.cache(arg)
-                except BuildbotException as e:
-                    env.log.error(e) 
-                env.log.info("cache finish") 
-            elif command == "connect":
-                cache.connect_to(arg)
-
-            elif command == "stop":
-                break
-
-            else:
-                print("wtf!?")
-    except Exception as e:
-        env.log.error(e)
+        cache.env.log.error('cache')
+        cache.connect_to(address)
+        cache.cache(builders)
+        cache.env.log.error('cache finished')
+    except BuildbotException as e:
+        cache.env.log.error(e)
+        raise e
 
 
 class DeferredBuildbotCache(Singleton):
     def __init__(self, env):
         self.sync_cache = BuildbotCache(env)
-        self.timeout = Value('i', 60)
-        self.queue = Queue()
-        self.proccess = Process(target=async_buildbot_cache_writer_run,
-                                args=(self.queue, env.path, self.timeout))
-        self.start()
+        self.pool = Pool(1, async_buildbot_cache_init, (env.path,))
 
     def __del__(self):
         self.stop()
 
     def __getattr__(self, name):
-        try:
-            return getattr(self.sync_cache, name)
-        except Exception:
-            pass
-
-    def set_timeout(self, timeout):
-        self.timeout.value = timeout
+        return getattr(self.sync_cache, name)
 
     def cache(self, builders):
-        self.queue.put_nowait(("cache", builders))
-
-    def connect_to(self, address):
-        self.queue.put_nowait(("connect", address))
-        self.sync_cache.connect_to(address)
-
-    def start(self):
-        self.proccess.start()
+        result = self.pool.apply_async(async_buildbot_cache_worker, (self.connection.address, builders))
+        result.wait(3)
 
     def stop(self):
-        self.queue.put(("stop", None))
-        self.proccess.join(5)
-        if self.proccess.is_alive():
-            self.proccess.terminate()
+        self.pool.close()
+        self.pool.join()
 
 
 if __name__ == "__main__":
