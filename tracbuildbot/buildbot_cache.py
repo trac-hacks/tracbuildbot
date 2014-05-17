@@ -16,10 +16,6 @@ get_builds_query = """SELECT *,finish-start AS duration FROM buildbot_builds
                       WHERE finish >= %s AND finish <= %s AND builder IN (%s)
                    """
 
-get_builds_query2 = """SELECT *,finish-start AS duration FROM buildbot_builds
-                      WHERE finish >= %s AND finish <= %s
-                   """
-
 
 class BuildbotCacheException(BuildbotException):
     pass
