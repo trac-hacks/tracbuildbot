@@ -11,6 +11,7 @@ Features:
 - launch builds
 - uses jsonapi(buildbot >= 0.8.1)
 - timeline events
+- asynchronous caching info about builds in trac db
 
 maxim.kaskevich@gmail.com
 
