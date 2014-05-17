@@ -12,32 +12,28 @@ import json
 import urllib
 from datetime import datetime
 
-
-def singleton(cls):
-    instances = {}
-    def getinstance(*args):
-        if cls not in instances:
-            instances[cls] = cls(*args)
-        return instances[cls]
-    return getinstance
+from tools import Singleton
 
 class BuildbotException(Exception):
     def __init__(self, args):
         Exception.__init__(self, args)
 
-@singleton
-class BuildbotConnection:
+class BuildbotConnection(Singleton):
     headers = {'connection': 'Keep-Alive',
                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'}
     user=""
     password=""
 
     def __init__(self, address=None):
-        if address: self.connect_to(address)
+        if address:
+            self.connect_to(address)
+        else:
+            self.address = ""
 
     def connect_to(self, address):
-        self.address = address
-        self.connection = httplib.HTTPConnection(address)
+        if self.address != address:
+            self.address = address
+            self.connection = httplib.HTTPConnection(address)
 
     def _request(self, request_msg, method="GET", **kwagrs):
         if kwagrs:
@@ -54,8 +50,8 @@ class BuildbotConnection:
             try:
                 self.connection.request(method, request_msg, kwagrs, self.headers)
                 r = self.connection.getresponse()
-            except (socket.gaierror, httplib.CannotSendRequest):
-                raise BuildbotException("Request failed")
+            except (socket.error, httplib.CannotSendRequest) as e:
+                raise BuildbotException("Request failed %s" % e)
 
         if not (200 <= r.status < 400):
             raise BuildbotException("Request failed (%s %s)" % (r.status, r.reason))
@@ -93,9 +89,10 @@ class BuildbotConnection:
         if not 'results' in data or not (type(data['results']) == int):
             status = "running"
         else:
-            status = "success" if data['results'] == 0 else "failed"
+            status = "successful" if data['results'] == 0 else "failed"
 
         build = dict({
+                'builder': data['builderName'],
                 'status': status,
                 'start' : datetime.fromtimestamp(int(data['times'][0])),
                 'num': data['number'],
@@ -103,7 +100,7 @@ class BuildbotConnection:
 
         if len(data['times']) > 1 and type(data['times'][1]) == float:
             build['finish'] = datetime.fromtimestamp(int(data['times'][1]))
-            build['duration'] = build['finish'] - build['start']
+            #build['duration'] = build['finish'] - build['start']
 
 
         for prop in data['properties']:
@@ -126,3 +123,41 @@ class BuildbotConnection:
     def get_build(self, builder, num):
         res = self._request("/json/builders/%s/builds/%d" % (builder, num))
         return self._parse_build(res)
+
+
+if __name__ == "__main__":
+    bc = BuildbotConnection()
+    bc.connect_to("localhost:8010")
+    builders = bc.get_builders()
+    print("BUILDERS:", [name for name in builders],"\n")
+
+    #print "LAST BUILDS:",bc.get_last_builds(builders),"\n"
+    print("LAST BUILDS:")
+    for name, builder in bc.get_last_builds(builders).iteritems():
+        last_build = builder['builds']['-1']  
+        print(name, ":")
+        print("build " + ( "successful " if last_build['results'] == 0 else "failed (%s)" % last_build['results']))
+        print("started at", datetime.datetime.fromtimestamp(last_build['times'][0]))
+        print("finished at", datetime.datetime.fromtimestamp(last_build['times'][1]))
+        print("buildnumber - ", last_build['number'])
+
+        for prop in  last_build['properties']:
+            if prop[0] == 'got_revision':
+                print("revision - ", prop[1])
+                break
+        print("")
+
+    #print "BUILD TEST:"
+    #try:
+    #    bc.build('runtests')
+    #except buildbot_api.BuildbotException as e:
+    #    print (e)
+
+
+    print("LOGIN TEST:")
+    print(bc.login("qwe","qwe"))
+
+    #print "BUILD TEST:"
+    #print (bc.build('runtests'))
+
+

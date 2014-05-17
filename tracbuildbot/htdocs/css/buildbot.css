@@ -29,13 +29,13 @@ div.inner-build {
 	padding: 5px 15px;
 	font-size: 80%;
 }
-dt.success {
+dt.successful {
 	background: url(../img/build_s.gif) no-repeat scroll 0 50%;
 }
 dt.failed {
 	background: url(../img/build_f.gif) no-repeat scroll 0 50%;
 }
-.success_build {
+.successful_build {
 	padding-left: 16px;
 	background: url(../img/build_s.gif) no-repeat scroll 0 50%;
 }
