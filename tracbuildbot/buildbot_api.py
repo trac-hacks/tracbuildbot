@@ -31,13 +31,12 @@ class BuildbotConnection(Singleton):
             self.address = ""
 
     def connect_to(self, address):
-        if self.address != address:
+        if not hasattr(self,'address') or self.address != address:
             self.address = address
             self.connection = httplib.HTTPConnection(address)
 
     def reconnect(self):
         self.connection = httplib.HTTPConnection(self.address)
-
 
     def _request(self, request_msg, method="GET", **kwagrs):
         if kwagrs:
@@ -84,7 +83,6 @@ class BuildbotConnection(Singleton):
         #        raise BuildbotException('Authorization failed')
         #    r = self._raw_request("/builders/%s/force" % builder, method="POST",
         #                          reason='launched from trac', forcescheduler='force')
-
 
     def _parse_build(self, res):
         data = json.loads(res.read())
