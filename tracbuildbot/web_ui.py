@@ -72,7 +72,10 @@ class BuildbotPage(Component, BuildbotSettings):
 
             bc = BuildbotConnection(options['base_url'])
             for builder in options['page_builders']:
-                builds[builder] = bc.get_build(builder, -1)
+                try:
+                    builds[builder] = bc.get_build(builder, -1)
+                except BuildbotException as e:
+                    builds[builder] = dict({"builder":builder})
         except BuildbotException as e:
             errors.append("Fail to get builds info: %s" % e)
             return "buildbot_builds.html", {"builds": [],"errors":errors}, None
