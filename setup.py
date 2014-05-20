@@ -23,6 +23,7 @@ setup(
     buildbot.web_ui = tracbuildbot.web_ui
     buildbot.timeline = tracbuildbot.timeline
     buildbot.admin = tracbuildbot.admin
+    buildbot.env = tracbuildbot.environmentSetup
     """,
     package_data={'tracbuildbot': ['templates/*.html',
                                             'htdocs/css/*.css',
