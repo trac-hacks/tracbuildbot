@@ -40,7 +40,7 @@ $.get(\'/buildbot/build/' + data['builder'] + '\');"/>';
         if (data['status'] == 'failed') {
             content += '<div class="build-info">' + data['error'];
             if ('error_log' in data) {
-                content += ' <a href="{0.error_log}">Log</a>';
+                content += ' <a href="' + data['error_log'] + '">Log</a>';
             }
             content += '</div> ';
         }
