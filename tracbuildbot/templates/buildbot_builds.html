@@ -16,57 +16,27 @@
             <div class="system-message">${errors}</div>
 		</py:when>
     </py:choose>
+    <script type="text/javascript">
+        buildbot_url = '${buildbot_url}';
+        trac_url = '${trac_url}';
+        build_permisson = ${view_build_buttons};
+        buildbot_sources = {${sources}};
+        builders = [${builders_str_list}];
+        function refresh() {
+            builders.forEach(function (builder) {
+                load_last_build(builder)
+            });
+        };
+        refresh();
+        var timer = setInterval(refresh, 5000);
+    </script>
     <div class="build-list">
-	    <div py:for="build in builds" class="project-wrapper">
+	    <div py:for="builder in builders" class="project-wrapper" id="builder_${builder}">
 		    <div class="project-header" style="width: 100%;">
-                ${build['builder']}
-				<py:choose>
-					<py:when test="view_build_buttons">
-                        <input style="margin-left: 10px;" type="button" name="build" value="Build"
-                            onclick="location.href = '/buildbot/build/${build['builder']}'"/>
-        			</py:when>
-        		</py:choose>                       
+                ${builder}
             </div>
             <div class="inner-build">
-				<py:choose>
-					<py:when test="build['status']">
-                        <div class="build-info">Last build <a href="${build['url']}">#${build['num']}</a>:
-                            <span class="${build['status']}_build">${build['status']}</span>
-                        </div>
-				        <py:choose>
-					        <py:when test="build['error']">
-                                <div class="build-info">${build['error']}
-				                    <py:choose>
-					                    <py:when test="build['error_log']">
-                                            <a href="${build['error_log']}">Log</a>
-        					            </py:when>
-        				            </py:choose>                       
-                                </div>
-        					</py:when>
-        				</py:choose>                       
-                        <br/>
-                        <div class="build-info">Started at ${build['start']}</div>
-				        <py:choose>
-					        <py:when test="build['finish']">
-                                <div class="build-info">Finished at ${build['finish']} (duration ${build['duration']})</div>
-        					</py:when>
-        				</py:choose>
-				        <py:choose>
-					        <py:when test="build['revision'] and build['source']">
-                                <div class="build-info">Revision: 
-                                    <a href="${trac_url}/browser/${build['source']}/?rev${build['revision']}">
-                                        ${build['revision']}</a>
-                                    (<a href="${trac_url}/changeset/${build['revision']}/${build['source']}"
-                                        >changeset</a>)
-                                </div>
-        					</py:when>
-        				</py:choose>                       
-
-					</py:when>
-					<py:otherwise>
-						<span>Build history is empty</span>
-					</py:otherwise>
-				</py:choose>
+                <span>No builds...</span>
 			</div>
 		</div>
 	</div>

@@ -62,41 +62,27 @@ class BuildbotPage(Component, BuildbotSettings):
         options = self._get_options()
 
         add_stylesheet(req,'tracbuildbot/css/buildbot.css')
-
-        builds = {}
-        try:
-            if not options or not 'base_url' in options:
-                raise BuildbotException('Base url is required')
-            if not options or not 'page_builders' in options:
-                raise BuildbotException("No builds to view")
-
-            bc = BuildbotConnection(options['base_url'])
-            for builder in options['page_builders']:
-                try:
-                    builds[builder] = bc.get_build(builder, -1)
-                except BuildbotException as e:
-                    builds[builder] = dict({"builder":builder})
-        except BuildbotException as e:
-            errors.append("Fail to get builds info: %s" % e)
-            return "buildbot_builds.html", {"builds": [],"errors":errors}, None
+        add_stylesheet(req,'tracbuildbot/css/futu_alert.css')
+        add_script(req,'tracbuildbot/js/jquery-1.11.1.min.js')
+        add_script(req,'tracbuildbot/js/futu_alert.js')
+        add_script(req,'tracbuildbot/js/buildbot.js')
 
         trac_path = self.config.get('project','url')
         if not trac_path.startswith('http'):
             trac_path = 'http://' + trac_path
 
-        builds_desc = []
-        for builder, build  in builds.iteritems():
-            build['builder'] = builder
-            build["source"] = options['sources'].get(builder)
-            if 'num' in build:
-                build["url"] = ("http://%s/builders/%s/builds/%s" % 
-                    (options['base_url'], builder, str(build['num'])))
+        builders_str_list = ', '.join(["'%s'" % builder for builder in options['page_builders']])
 
-            builds_desc.append(build)
+        sources = ", ".join(["'%s': '%s'" % (builder, source) for builder, source in options['sources'].iteritems()])
 
-        return "buildbot_builds.html", {"builds": builds_desc, "errors":errors, 
-                                        'view_build_buttons': add_build_buttons,
-                                        'trac_url': trac_path}, None
+        return "buildbot_builds.html", {"builders": options['page_builders'],
+                                        "builders_str_list": builders_str_list,
+                                        'view_build_buttons': str(add_build_buttons).lower(),
+                                        'buildbot_url': options['base_url'],
+                                        'trac_url': trac_path,
+                                        'sources': sources,
+                                        }, None
+
 
 class BuildbotBuildHandler(Component, BuildbotSettings):
     implements(IRequestHandler)
@@ -127,7 +113,7 @@ class BuildbotBuildHandler(Component, BuildbotSettings):
         builder = req.args['builder']
         options = self._get_options()
 
-        bc = BuildbotConnection()
+        bc = BuildbotConnection(options['base_url'])
         bc.login(options['username'], options['password'])
         bc.build(builder)
 
