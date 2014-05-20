@@ -5,13 +5,13 @@ This trac(http://trac.edgewall.org/) plugin provides intergration with
 build system buildbot(http://buildbot.net/).
 
 Features:
-- page with status of last buildbot builds
-- filter of builder to view
-- link builder to source repo
-- launch builds
+- status page with last builds
+- attaching builder to source (links to revisions, changesets)
+- launch build
 - uses jsonapi(buildbot >= 0.8.0)
 - timeline events
-- asynchronous caching info about builds in trac db
+- filter for status page and timeline
+- deferred caching events to trac db
 
 maxim.kaskevich@gmail.com
 
