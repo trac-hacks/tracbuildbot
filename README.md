@@ -9,7 +9,7 @@ Features:
 - filter of builder to view
 - link builder to source repo
 - launch builds
-- uses jsonapi(buildbot >= 0.8.1)
+- uses jsonapi(buildbot >= 0.8.0)
 - timeline events
 - asynchronous caching info about builds in trac db
 
