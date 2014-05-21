@@ -12,7 +12,6 @@ from trac.perm import IPermissionRequestor
 from buildbot_api import BuildbotConnection, BuildbotException
 from trac.web.chrome import add_script, add_stylesheet
 from trac.web import HTTPForbidden
-import locale
 
 
 class BuildbotSettings:
@@ -105,7 +104,6 @@ class BuildbotAdmin(Component, BuildbotSettings):
             options,errors = self._get_options(),[]
         
         builders = []
-        locale.setlocale(locale.LC_ALL, '')
 
         try:
             if not options or not 'base_url' in options:
