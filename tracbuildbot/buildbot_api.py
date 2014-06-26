@@ -29,6 +29,7 @@ class BuildbotConnection(Singleton):
             self.connect_to(address)
         else:
             self.address = ""
+            self.connection = None
 
     def connect_to(self, address):
         if not hasattr(self,'address') or self.address != address:
@@ -39,6 +40,9 @@ class BuildbotConnection(Singleton):
         self.connection = httplib.HTTPConnection(self.address)
 
     def _request(self, request_msg, method="GET", **kwagrs):
+        if not self.connection:
+            raise BuildbotException("Request failed - connection not initialized")
+
         if kwagrs:
             kwagrs = urllib.urlencode(kwagrs)
         else:
