@@ -1,6 +1,7 @@
 from datetime import datetime, date
 import time
 from multiprocessing import Pool
+import traceback
 
 from trac.env import Environment
 from trac.db.api import get_column_names
@@ -49,7 +50,11 @@ class BuildbotCache(Singleton):
             if not last_cached_num: last_cached_num = -1
 
             for num in xrange(last_cached_num + 1, last_build_num + 1):
-                build = self.connection.get_build(builder, num)
+                try:
+                    build = self.connection.get_build(builder, num)
+                except BuildbotException as e:
+                    self.env.log.error(e)
+                    continue
 
                 query_build = dict()
                 try:
@@ -65,7 +70,7 @@ class BuildbotCache(Singleton):
                         else:
                             raise BuildbotCacheException('unknown type %s - %s' % (key, val))
                 except BuildbotCacheException as e:
-                    env.log.error(e)
+                    self.env.log.error(e)
                     continue
 
                 cursor.execute(save_build_query % (','.join(query_build.keys()),
@@ -98,9 +103,8 @@ def async_buildbot_cache_worker(address, builders):
         cache.connect_to(address)
         cache.cache(builders)
         cache.env.log.debug('cache finished')
-    except BuildbotException as e:
-        cache.env.log.error(e)
-        raise e
+    except Exception:
+        cache.env.log.error(traceback.format_exc())
 
 
 class DeferredBuildbotCache(Singleton):
