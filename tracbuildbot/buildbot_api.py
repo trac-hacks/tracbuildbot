@@ -11,6 +11,7 @@ import httplib
 import json
 import urllib
 from datetime import datetime
+import time
 
 from tools import Singleton
 
@@ -23,6 +24,7 @@ class BuildbotConnection(Singleton):
                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'}
     user=""
     password=""
+    max_request_try = 2
 
     def __init__(self, address=None):
         if address:
@@ -43,21 +45,33 @@ class BuildbotConnection(Singleton):
             kwagrs = urllib.urlencode(kwagrs)
         else:
             kwagrs = None
-
-        r = None
-        try:
-            self.connection.request(method, request_msg, kwagrs, self.headers)
-            r = self.connection.getresponse()
-        except (socket.error, httplib.CannotSendRequest, httplib.ResponseNotReady):
+        
+        request_try = 0
+        while(request_try < self.max_request_try):
+            request_try += 1
+            r = None
             try:
-                self.reconnect()
                 self.connection.request(method, request_msg, kwagrs, self.headers)
                 r = self.connection.getresponse()
-            except (socket.error, httplib.CannotSendRequest) as e:
-                raise BuildbotException("Request failed %s" % e)
 
-        if not (200 <= r.status < 400):
-            raise BuildbotException("Request failed (%s %s)" % (r.status, r.reason))
+            except (socket.error, httplib.CannotSendRequest, httplib.ResponseNotReady) as e:
+                if not request_try < self.max_request_try:
+                    raise BuildbotException("Request %s failed %s: %s" % (request_msg, type(e), e))
+                else:
+                    time.sleep(1)
+                    self.reconnect()
+                    continue
+
+            if not (200 <= r.status < 400):
+                if not request_try < self.max_request_try:
+                    raise BuildbotException("Request %s failed (%s %s)" % (request_msg, r.status, r.reason))
+                else:
+                    time.sleep(1)
+                    self.reconnect()
+                    continue
+            else:
+                break
+
         return r
 
     def get_builders(self):
