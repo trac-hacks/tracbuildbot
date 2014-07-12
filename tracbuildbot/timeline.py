@@ -88,11 +88,12 @@ class BuildbotTimeline(Component, BuildbotSettings):
         elif field == 'description':
             data = event[3]
             msg = tag.span()
-            if data['source'] and "rev" in data:                
-                rev_msg = tag.div(
-                    tag.a("revision", href=context.href("/browser/%s" % data['source'], rev=data['rev'])),
+            if data['source'] and data["rev"]:
+                rev_msg = tag.div("rev: ",
+                    tag.a(data['rev'][:7], href=context.href("/browser/%s" % data['source'], rev=data['rev'])),
                     " ",    
-                    tag.a("changeset", href=context.href("/changeset/%s/%s" % (data['rev'], data['source'])))
+                    tag.a(tag.img(src=context.href("/chrome/common/changeset.png")),
+                          href=context.href("/changeset/%s/%s" % (data['rev'], data['source'])))
                     )
                 msg.append(rev_msg)
 
