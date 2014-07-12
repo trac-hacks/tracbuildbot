@@ -129,7 +129,7 @@ class BuildbotConnection(Singleton):
             build['error'] = ', '.join(data['text'])
             try:
                 for step in data['steps']:
-                    if "results" in step and step["results"][0] != 0 and step["results"][0] != 3:
+                    if "results" in step and step["results"][0] == 2:
                         build['error_log'] = step['logs'][0][1]
                         break
             except (IndexError, KeyError):
