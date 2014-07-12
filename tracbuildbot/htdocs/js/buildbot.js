@@ -64,7 +64,7 @@ $.get(\'/buildbot/build/' + data['builder'] + '\');"/>';
 
         if ('rev' in data && data['rev'] != "" && 'source' in data) {
             content += ' <div class="build-info">Revision: \
-                            <a href="' + trac_url + '/browser/' + data['source'] + '/?rev' + data['rev'] + '"> \
+                            <a href="' + trac_url + '/browser/' + data['source'] + '/?rev=' + data['rev'] + '"> \
                                 ' + data['rev'] + '</a> \
                             (<a href="' + trac_url + '/changeset/' + data['rev'] + '/' + data['source'] + '" \
                                 >changeset</a>) \
