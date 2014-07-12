@@ -63,7 +63,6 @@ class BuildbotPage(Component, BuildbotSettings):
 
         add_stylesheet(req,'tracbuildbot/css/buildbot.css')
         add_stylesheet(req,'tracbuildbot/css/futu_alert.css')
-        add_script(req,'tracbuildbot/js/jquery-1.11.1.min.js')
         add_script(req,'tracbuildbot/js/futu_alert.js')
         add_script(req,'tracbuildbot/js/buildbot.js')
 
