@@ -23,8 +23,11 @@ function gen_build_html(data, bb_url, build_button) {
     if (build_button) {
         content += ' \
         <input style="margin-left: 10px;" type="button" name="build" value="Build" \
-        onclick="futu_alert(\'Build ' + data['builder'] + '\', \'Builder ' + data['builder'] + ' was pending\'); \
-$.get(\'/buildbot/build/' + data['builder'] + '\');"/>';
+        onclick="\
+$.get(\'/buildbot/build?builder=' + data['builder'] + '\')\
+.done(function( result ) { futu_alert(\'Build ' + data['builder'] + '\', result); })\
+.fail(function( result ) { futu_alert(\'Build ' + data['builder'] + '\', result, true, "error"); });\
+"/>';
     }
 
     content += ' </div> \

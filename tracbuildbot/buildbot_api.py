@@ -45,6 +45,8 @@ class BuildbotConnection(Singleton):
         if not self.connection:
             raise BuildbotException("Request failed - connection not initialized")
 
+        request_msg = urllib.quote(request_msg)
+
         if kwagrs:
             kwagrs = urllib.urlencode(kwagrs)
         else:
@@ -83,7 +85,7 @@ class BuildbotConnection(Singleton):
         return [name for name in json.loads(res.read())]
 
     def login(self, user, password):
-        r = self._request("/login?username=%s&passwd=%s" % (user, password))
+        r = self._request("/login", "POST", username=user, passwd=password)
         r.read()
         cookie = r.getheader('set-cookie')
         if not cookie:
@@ -96,6 +98,7 @@ class BuildbotConnection(Singleton):
     def build(self, builder):
         r = self._request("/builders/%s/force" % builder, method="POST",
                               reason='launched from trac', forcescheduler='force')
+        r.read()
         #if r.read().find('authfail'):
         #    if not self.login(self.user, self.password):
         #        raise BuildbotException('Authorization failed')
