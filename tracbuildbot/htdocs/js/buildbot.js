@@ -24,9 +24,9 @@ function gen_build_html(data, bb_url, build_button) {
         content += ' \
         <input style="margin-left: 10px;" type="button" name="build" value="Build" \
         onclick="\
-$.get(\'/buildbot/build?builder=' + data['builder'] + '\')\
-.done(function( result ) { futu_alert(\'Build ' + data['builder'] + '\', result); })\
-.fail(function( result ) { futu_alert(\'Build ' + data['builder'] + '\', result, true, "error"); });\
+$.ajax(\'/buildbot/build?builder=' + data['builder'] + '\')\
+.done(function( result, status ) { futu_alert(\'Build ' + data['builder'] + '\', status + result); })\
+.fail(function( jqXHR, textStatus ) { futu_alert(\'Build ' + data['builder'] + '\', jqXHR.responseText, true, \'error\'); });\
 "/>';
     }
 

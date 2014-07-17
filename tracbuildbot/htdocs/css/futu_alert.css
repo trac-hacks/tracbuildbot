@@ -38,6 +38,7 @@
 	top:0;
 	right:0;
 	outline:none;
+	background: url(../img/cross.gif) no-repeat scroll 0 50%;
 }
 .futu_alerts_holder .message {
 	color:#FFF;

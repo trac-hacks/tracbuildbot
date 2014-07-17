@@ -46,8 +46,8 @@ function futu_alert(header, text, close, className) {
 
         var futuAlertCloseButtonIcon = document.createElement('img');
         // здесь не забывайте указать свой путь к пиктограмме закрытия окна
-        futuAlertCloseButtonIcon.src = '/engine/plugins/bookmarks/img/btn_close.gif';
-        futuAlertCloseButton.appendChild(futuAlertCloseButtonIcon);
+        //futuAlertCloseButtonIcon.src = '../img/cross.png';
+        //futuAlertCloseButton.appendChild(futuAlertCloseButtonIcon);
     }
 
     // создаем div с текстом сообщения

@@ -103,13 +103,14 @@ class BuildbotBuildHandler(Component, BuildbotSettings):
             bc.build(builder)
         except BuildbotException as e:
             content = str(e)
+            req.send_response(500)
         else:
             content = 'Build pending'
+            req.send_response(200)
 
-        req.send_header('Status', 200)
-        req.end_headers()
         req.send_header('Content-Type', 'text/html')
         req.send_header('Content-Length', len(content))
+        req.end_headers()
 
         req.write(content)
 
