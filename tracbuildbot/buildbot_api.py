@@ -62,7 +62,7 @@ class BuildbotConnection(Singleton):
 
             except (socket.error, httplib.CannotSendRequest, httplib.ResponseNotReady) as e:
                 if not request_try < self.max_request_try:
-                    raise BuildbotException("Request %s failed %s: %s" % (request_msg, type(e), e))
+                    raise BuildbotException("Request %s failed %s: %s" % (request_msg, "%s.%s" % (e.__module__, type(e).__name__), e))
                 else:
                     time.sleep(1)
                     self.reconnect()
