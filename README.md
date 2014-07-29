@@ -24,3 +24,10 @@ Installation
  - `python setup.py bdist_egg`
 
 2. copy egg file from "tracbuildbot/dist" to "plugins" dir in trac enviroment
+
+
+Screenshots
+-----------------------
+![web page](https://raw.githubusercontent.com/Tramort/tracbuildbot/master/screens/webpage.png)
+![timeline](https://raw.githubusercontent.com/Tramort/tracbuildbot/master/screens/timeline.png)
+![admin page](https://raw.githubusercontent.com/Tramort/tracbuildbot/master/screens/admin.png)
