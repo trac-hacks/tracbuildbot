@@ -23,8 +23,11 @@ function gen_build_html(data, bb_url, build_button) {
     if (build_button) {
         content += ' \
         <input style="margin-left: 10px;" type="button" name="build" value="Build" \
-        onclick="futu_alert(\'Build ' + data['builder'] + '\', \'Builder ' + data['builder'] + ' was pending\'); \
-$.get(\'/buildbot/build/' + data['builder'] + '\');"/>';
+        onclick="\
+$.ajax(\'/buildbot/build?builder=' + data['builder'] + '\')\
+.done(function( result, status ) { futu_alert(\'Build ' + data['builder'] + '\', status + result); })\
+.fail(function( jqXHR, textStatus ) { futu_alert(\'Build ' + data['builder'] + '\', jqXHR.responseText, true, \'error\'); });\
+"/>';
     }
 
     content += ' </div> \
@@ -64,10 +67,10 @@ $.get(\'/buildbot/build/' + data['builder'] + '\');"/>';
 
         if ('rev' in data && data['rev'] != "" && 'source' in data) {
             content += ' <div class="build-info">Revision: \
-                            <a href="' + trac_url + '/browser/' + data['source'] + '/?rev' + data['rev'] + '"> \
-                                ' + data['rev'] + '</a> \
-                            (<a href="' + trac_url + '/changeset/' + data['rev'] + '/' + data['source'] + '" \
-                                >changeset</a>) \
+                            <a href="' + trac_url + '/browser/' + data['source'] + '/?rev=' + data['rev'] + '"> \
+                                ' + data['rev'].substring(0,7) + '</a> \
+                            <a href="' + trac_url + '/changeset/' + data['rev'] + '/' + data['source'] + '" \
+                                ><img src="' + trac_url + '/chrome/common/changeset.png"/></a> \
                         </div> ';
         }
 

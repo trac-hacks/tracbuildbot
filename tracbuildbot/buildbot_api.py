@@ -11,6 +11,7 @@ import httplib
 import json
 import urllib
 from datetime import datetime
+import time
 
 from tools import Singleton
 
@@ -23,6 +24,7 @@ class BuildbotConnection(Singleton):
                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'}
     user=""
     password=""
+    max_request_try = 2
 
     def __init__(self, address=None):
         if address:
@@ -43,25 +45,39 @@ class BuildbotConnection(Singleton):
         if not self.connection:
             raise BuildbotException("Request failed - connection not initialized")
 
+        request_msg = urllib.quote(request_msg)
+
         if kwagrs:
             kwagrs = urllib.urlencode(kwagrs)
         else:
             kwagrs = None
-
-        r = None
-        try:
-            self.connection.request(method, request_msg, kwagrs, self.headers)
-            r = self.connection.getresponse()
-        except (socket.error, httplib.CannotSendRequest, httplib.ResponseNotReady):
+        
+        request_try = 0
+        while(request_try < self.max_request_try):
+            request_try += 1
+            r = None
             try:
-                self.reconnect()
                 self.connection.request(method, request_msg, kwagrs, self.headers)
                 r = self.connection.getresponse()
-            except (socket.error, httplib.CannotSendRequest) as e:
-                raise BuildbotException("Request failed %s" % e)
 
-        if not (200 <= r.status < 400):
-            raise BuildbotException("Request failed (%s %s)" % (r.status, r.reason))
+            except (socket.error, httplib.CannotSendRequest, httplib.ResponseNotReady) as e:
+                if not request_try < self.max_request_try:
+                    raise BuildbotException("Request %s failed %s: %s" % (request_msg, "%s.%s" % (e.__module__, type(e).__name__), e))
+                else:
+                    time.sleep(1)
+                    self.reconnect()
+                    continue
+
+            if not (200 <= r.status < 400):
+                if not request_try < self.max_request_try:
+                    raise BuildbotException("Request %s failed (%s %s)" % (request_msg, r.status, r.reason))
+                else:
+                    time.sleep(1)
+                    self.reconnect()
+                    continue
+            else:
+                break
+
         return r
 
     def get_builders(self):
@@ -69,7 +85,7 @@ class BuildbotConnection(Singleton):
         return [name for name in json.loads(res.read())]
 
     def login(self, user, password):
-        r = self._request("/login?username=%s&passwd=%s" % (user, password))
+        r = self._request("/login", "POST", username=user, passwd=password)
         r.read()
         cookie = r.getheader('set-cookie')
         if not cookie:
@@ -82,6 +98,7 @@ class BuildbotConnection(Singleton):
     def build(self, builder):
         r = self._request("/builders/%s/force" % builder, method="POST",
                               reason='launched from trac', forcescheduler='force')
+        r.read()
         #if r.read().find('authfail'):
         #    if not self.login(self.user, self.password):
         #        raise BuildbotException('Authorization failed')
@@ -115,7 +132,7 @@ class BuildbotConnection(Singleton):
             build['error'] = ', '.join(data['text'])
             try:
                 for step in data['steps']:
-                    if "results" in step and step["results"][0] != 0 and step["results"][0] != 3:
+                    if "results" in step and step["results"][0] == 2:
                         build['error_log'] = step['logs'][0][1]
                         break
             except (IndexError, KeyError):

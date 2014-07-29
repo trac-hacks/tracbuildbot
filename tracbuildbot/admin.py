@@ -44,31 +44,30 @@ class BuildbotSettings:
         else:
             errors.append('Password is required')
 
-        sources = set()
         if args.get('page_builders', False):
             if type(args['page_builders']) is list:
-                sources.update(args['page_builders'])
                 new_options['page_builders'] = args['page_builders']
             else:
                 builder = args['page_builders']
-                sources.add(builder)
                 new_options['page_builders'] = [builder]
         else:
             new_options['page_builders'] = []
 
         if args.get('timeline_builders', False):
             if type(args['timeline_builders']) is list:
-                sources.update(args['timeline_builders'])
                 new_options['timeline_builders'] = args['timeline_builders']
             else:
                 builder = args['timeline_builders']
-                sources.add(builder)
                 new_options['timeline_builders'] = [builder]
         else:
             new_options['timeline_builders'] = []
 
-        new_options['sources'] = [builder + "=" + args[builder + '_source']
-                                    for builder in sources]
+        sources = dict()
+        for name, value in args.iteritems():
+            if name.endswith('_source'):
+                sources[name[:-7]] = value
+        new_options['sources'] = [builder + "=" + source
+                                  for builder, source in sources.iteritems()]
 
         if not errors:
             for key,value in new_options.items():

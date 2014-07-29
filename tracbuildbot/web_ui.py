@@ -88,24 +88,9 @@ class BuildbotBuildHandler(Component, BuildbotSettings):
 
     #IRequestHandler methods
     def match_request(self,req):
-        match = re.match('/buildbot/build/(\w+)?$',req.path_info)
-        if match:
-            req.args['builder'] = match.group(1)
-            return True
-
+        return req.path_info == '/buildbot/build'
 
     def process_request(self,req):
-        content = '<meta http-equiv="Refresh" content="0; URL=../../buildbot">'
-
-        req.send_header('Status', 303)
-        req.send_header('Location', '../../buildbot')
-        req.end_headers()
-        req.send_header('Content-Type', 'text/html')
-        req.send_header('Content-Length', len(content))
-
-        req.write(content)
-
-
         if not req.perm.has_permission('BUILDBOT_BUILD'):
             return 
 
@@ -113,7 +98,20 @@ class BuildbotBuildHandler(Component, BuildbotSettings):
         options = self._get_options()
 
         bc = BuildbotConnection(options['base_url'])
-        bc.login(options['username'], options['password'])
-        bc.build(builder)
+        try:
+            bc.login(options['username'], options['password'])
+            bc.build(builder)
+        except BuildbotException as e:
+            content = str(e)
+            req.send_response(500)
+        else:
+            content = 'Build pending'
+            req.send_response(200)
+
+        req.send_header('Content-Type', 'text/html')
+        req.send_header('Content-Length', len(content))
+        req.end_headers()
+
+        req.write(content)
 
 
