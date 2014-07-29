@@ -28,8 +28,8 @@ class BuildbotCache(Singleton):
         self.connection = BuildbotConnection()
         self.fields = [col.name for col in environmentSetup.table.columns]
 
-    def connect_to(self, address):
-        self.connection.connect_to(address)
+    def connect_to(self, url):
+        self.connection.connect_to(url)
 
     def cache(self, builders):
         for builder in builders:
@@ -96,11 +96,11 @@ def async_buildbot_cache_init(env_path):
     global cache
     cache = BuildbotCache(Environment(env_path))
 
-def async_buildbot_cache_worker(address, builders):
+def async_buildbot_cache_worker(url, builders):
     global cache
     try:
         cache.env.log.debug('cache')
-        cache.connect_to(address)
+        cache.connect_to(url)
         cache.cache(builders)
         cache.env.log.debug('cache finished')
     except Exception:
@@ -119,7 +119,7 @@ class DeferredBuildbotCache(Singleton):
         return getattr(self.sync_cache, name)
 
     def cache(self, builders):
-        result = self.pool.apply_async(async_buildbot_cache_worker, (self.connection.address, builders))
+        result = self.pool.apply_async(async_buildbot_cache_worker, (self.connection.url, builders))
         result.wait(3)
 
     def stop(self):

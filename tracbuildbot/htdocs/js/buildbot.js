@@ -36,7 +36,7 @@ $.ajax(\'/buildbot/build?builder=' + data['builder'] + '\')\
     if ('status' in data) {
         content += ' \
         <div class="build-info">Last build \
-            <a href="http://' + bb_url + '/builders/' + data['builder'] + '/builds/' + data['num'] + '">' + data['num'] + '</a>: \
+            <a href="' + bb_url + '/builders/' + data['builder'] + '/builds/' + data['num'] + '">' + data['num'] + '</a>: \
             <span class="' + data['status'] + '_build">' + data['status'] + '</span> \
         </div>';
 
@@ -85,7 +85,7 @@ $.ajax(\'/buildbot/build?builder=' + data['builder'] + '\')\
 }
 
 function build_request(buildbot_url, builder, num, callback) {
-    $.getJSON("http://" + buildbot_url + "/json/builders/" + builder + "/builds/" + num + "?filter=1", function (data) {
+    $.getJSON(buildbot_url + "/json/builders/" + builder + "/builds/" + num + "?filter=1", function (data) {
         var build = {};
 
         build["builder"] = data["builderName"];

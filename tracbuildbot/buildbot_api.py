@@ -12,6 +12,7 @@ import json
 import urllib
 from datetime import datetime
 import time
+import re
 
 from tools import Singleton
 
@@ -26,20 +27,28 @@ class BuildbotConnection(Singleton):
     password=""
     max_request_try = 2
 
-    def __init__(self, address=None):
-        if address:
-            self.connect_to(address)
+    def __init__(self, url=None):
+        if url:
+            self.connect_to(url)
         else:
-            self.address = ""
+            self.url = ""
             self.connection = None
 
-    def connect_to(self, address):
-        if not hasattr(self,'address') or self.address != address:
-            self.address = address
-            self.connection = httplib.HTTPConnection(address)
+    def connect_to(self, url):
+        if not hasattr(self,'url') or self.url != url:
+            self.url = url
+            self.reconnect()
 
     def reconnect(self):
-        self.connection = httplib.HTTPConnection(self.address)
+        match = re.match("(.*)://(.*)", self.url)
+        if match:
+            protocol, server = match.groups()
+            if protocol == "http":
+                self.connection = httplib.HTTPConnection(server)
+            elif protocol == "https":
+                self.connection = httplib.HTTPSConnection(server)
+            else:
+                raise BuildbotException("Request failed - unknown protocol")
 
     def _request(self, request_msg, method="GET", **kwagrs):
         if not self.connection:
