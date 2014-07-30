@@ -26,6 +26,7 @@ class BuildbotConnection(Singleton):
     user=""
     password=""
     max_request_try = 2
+    pre_path = ""
 
     def __init__(self, url=None):
         if url:
@@ -40,21 +41,22 @@ class BuildbotConnection(Singleton):
             self.reconnect()
 
     def reconnect(self):
-        match = re.match("(.*)://(.*)", self.url)
+        match = re.match("(.+)://([^/]+)(?:/(.+))?", self.url)
         if match:
-            protocol, server = match.groups()
+            protocol, server, pre_path = match.groups()
             if protocol == "http":
                 self.connection = httplib.HTTPConnection(server)
             elif protocol == "https":
                 self.connection = httplib.HTTPSConnection(server)
             else:
                 raise BuildbotException("Request failed - unknown protocol")
+            self.pre_path = pre_path if pre_path else ""
 
-    def _request(self, request_msg, method="GET", **kwagrs):
+    def _request(self, path, method="GET", **kwagrs):
         if not self.connection:
             raise BuildbotException("Request failed - connection not initialized")
 
-        request_msg = urllib.quote(request_msg)
+        path = urllib.quote(path)
 
         if kwagrs:
             kwagrs = urllib.urlencode(kwagrs)
@@ -66,12 +68,12 @@ class BuildbotConnection(Singleton):
             request_try += 1
             r = None
             try:
-                self.connection.request(method, request_msg, kwagrs, self.headers)
+                self.connection.request(method, self.pre_path + path, kwagrs, self.headers)
                 r = self.connection.getresponse()
 
             except (socket.error, httplib.CannotSendRequest, httplib.ResponseNotReady) as e:
                 if not request_try < self.max_request_try:
-                    raise BuildbotException("Request %s failed %s: %s" % (request_msg, "%s.%s" % (e.__module__, type(e).__name__), e))
+                    raise BuildbotException("Request %s failed %s: %s" % (path, "%s.%s" % (e.__module__, type(e).__name__), e))
                 else:
                     time.sleep(1)
                     self.reconnect()
@@ -79,7 +81,7 @@ class BuildbotConnection(Singleton):
 
             if not (200 <= r.status < 400):
                 if not request_try < self.max_request_try:
-                    raise BuildbotException("Request %s failed (%s %s)" % (request_msg, r.status, r.reason))
+                    raise BuildbotException("Request %s failed (%s %s)" % (path, r.status, r.reason))
                 else:
                     time.sleep(1)
                     self.reconnect()
