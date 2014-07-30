@@ -49,7 +49,7 @@ class BuildbotTimeline(Component, BuildbotSettings):
             return
 
         options = self._get_options()
-        if not options.get('timeline_builders',True) and not self.cache.tmp_path:
+        if not options.get('timeline_builders',True):
             return
 
         all_builds = []
