@@ -41,7 +41,7 @@ class BuildbotConnection(Singleton):
             self.reconnect()
 
     def reconnect(self):
-        match = re.match("(.+)://([^/]+)(?:/(.+))?", self.url)
+        match = re.match("(.+)://([^/]+)(/.+)?", self.url)
         if match:
             protocol, server, pre_path = match.groups()
             if protocol == "http":
