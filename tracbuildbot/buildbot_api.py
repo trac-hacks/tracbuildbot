@@ -71,7 +71,7 @@ class BuildbotConnection(Singleton):
                 self.connection.request(method, self.pre_path + path, kwagrs, self.headers)
                 r = self.connection.getresponse()
 
-            except (socket.error, httplib.CannotSendRequest, httplib.ResponseNotReady) as e:
+            except (socket.error, httplib.HTTPException) as e:
                 if not request_try < self.max_request_try:
                     raise BuildbotException("Request %s failed %s: %s" % (path, "%s.%s" % (e.__module__, type(e).__name__), e))
                 else:
