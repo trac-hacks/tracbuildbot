@@ -72,7 +72,7 @@ class BuildbotTimeline(Component, BuildbotSettings):
         for build in all_builds:
             timestamp = datetime.fromtimestamp(build['finish']).replace(tzinfo=localtz)
             build["source"] = options['sources'].get(build['builder'])
-            build["url"] = ("http://%s/builders/%s/builds/%s" % 
+            build["url"] = ("%s/builders/%s/builds/%s" % 
                 (options['base_url'], build['builder'], build['num']))
             yield build['status'], timestamp, 'buildbot server', build
 
