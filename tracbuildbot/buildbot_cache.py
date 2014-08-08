@@ -45,9 +45,7 @@ class BuildbotCache(Singleton):
             try:
                 last_cached_num = iter(cursor).next()[0]
             except StopIteration:
-                pass
-
-            if not last_cached_num: last_cached_num = -1
+                return
 
             for num in xrange(last_cached_num + 1, last_build_num + 1):
                 try:
