@@ -119,7 +119,7 @@ class BuildbotAdmin(Component, BuildbotSettings):
         for build in builders:
             projects.append({
                 'name': build,
-                'url': "http://" + options['base_url'] + "/builders/" + build,
+                'url': options['base_url'] + "/builders/" + build,
                 'page': dict({'checked':'true'})
                         if build in options.get('page_builders',[]) else {},
                 'timeline': dict({'checked':'true'})
