@@ -99,9 +99,13 @@ def async_buildbot_cache_init(env_path):
 def async_buildbot_cache_worker(url, builders):
     global cache
     try:
-        cache.env.log.debug('cache')
+        cache.env.log.debug('cache %s' % ', '.join(builders))
         cache.connect_to(url)
-        cache.cache(builders)
+        for builder in builders:
+            try:
+                cache.cache_builder(builder)
+            except BuildbotException as e:
+                cache.env.log.error(e)
         cache.env.log.debug('cache finished')
     except Exception:
         cache.env.log.error(traceback.format_exc())
