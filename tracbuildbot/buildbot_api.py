@@ -62,38 +62,30 @@ class BuildbotConnection(Singleton):
             kwagrs = urllib.urlencode(kwagrs)
         else:
             kwagrs = None
-        
-        request_try = 0
-        while(request_try < self.max_request_try):
-            request_try += 1
-            r = None
+
+        reconnect_try = 0
+        r = None
+        while True:
             try:
                 self.connection.request(method, self.pre_path + path, kwagrs, self.headers)
                 r = self.connection.getresponse()
-
+            except (httplib.CannotSendRequest, httplib.ResponseNotReady):
+                self.reconnect()
+                if reconnect_try > 3: break
+                reconnect_try += 1
+                continue
             except (socket.error, httplib.HTTPException) as e:
-                if not request_try < self.max_request_try:
-                    raise BuildbotException("Request %s failed %s: %s" % (path, "%s.%s" % (e.__module__, type(e).__name__), e))
-                else:
-                    time.sleep(1)
-                    self.reconnect()
-                    continue
+                raise BuildbotException("Request %s failed %s: %s" % (path, "%s.%s" % (e.__module__, type(e).__name__), e))
+            break
 
-            if not (200 <= r.status < 400):
-                if not request_try < self.max_request_try:
-                    raise BuildbotException("Request %s failed (%s %s)" % (path, r.status, r.reason))
-                else:
-                    time.sleep(1)
-                    self.reconnect()
-                    continue
-            else:
-                break
+        if r and not (200 <= r.status < 400):
+            raise BuildbotException("Request %s failed (%s %s)" % (path, r.status, r.reason))
 
         return r
 
     def get_builders(self):
         res = self._request('/json/builders')
-        return [name for name in json.loads(res.read())]
+        return res and [name for name in json.loads(res.read())]
 
     def login(self, user, password):
         r = self._request("/login", "POST", username=user, passwd=password)
