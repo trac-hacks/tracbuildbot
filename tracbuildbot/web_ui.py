@@ -11,6 +11,7 @@ import re
 import urlparse
 import urllib2
 from datetime import datetime
+import json
 
 import pkg_resources
 from trac.core import *
@@ -23,6 +24,7 @@ from trac.web.chrome import add_script, add_stylesheet
 
 from admin import BuildbotSettings
 from buildbot_api import BuildbotConnection, BuildbotException
+import tools
 
 class BuildbotChrome(Component):
     """Provides plugin templates and static resources."""
@@ -82,6 +84,34 @@ class BuildbotPage(Component, BuildbotSettings):
                                         'sources': sources,
                                         }, None
 
+class BuildbotJsonApiHandler(Component, BuildbotSettings):
+    """Renders pages with build results."""
+    implements(IRequestHandler)
+
+    #IRequestHandler methods
+    def match_request(self, req):
+        return re.match('/buildbot/json/lastbuilds$', req.path_info)
+
+    def process_request(self, req):
+        options = self._get_options()
+        bc = BuildbotConnection(options['base_url'])
+        last_builds = dict()
+        builders = req.args['builders'].split(',')
+        for builder in builders:
+            try:
+                build = bc.get_build(builder, -1)
+            except Exception as e:
+                #last_builds[builder] = str(e)
+                pass
+            else:
+                last_builds[builder] = build
+
+        content = json.dumps(last_builds, default=tools.date_handler)
+
+        req.send_header('Content-Type', 'application/javascript')
+        req.send_header('Content-Length', len(content))
+        req.end_headers()
+        req.write(content)
 
 class BuildbotBuildHandler(Component, BuildbotSettings):
     implements(IRequestHandler)

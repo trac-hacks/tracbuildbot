@@ -50,18 +50,20 @@ $.ajax(\'/buildbot/build?builder=' + data['builder'] + '\')\
 
         content += " <br/>";
 
-        content += '<div class="build-info">Started at ' + 
-            data['start'].toLocaleFormat('%Y-%m-%d %H:%M:%S') + '</div> ';
+        var start = new Date(data['start'])
+        content += '<div class="build-info">Started at ' +
+            start.toLocaleFormat('%Y-%m-%d %H:%M:%S') + '</div> ';
 
         if ('finish' in data && data['finish'] != null) {
-            var duration = Math.floor((data['finish'] - data['start']) / 1000);
+            var finish = new Date(data['finish'])
+            var duration = Math.floor((finish - start) / 1000);
             var h = Math.floor(duration / 3600);
             var m = Math.floor((duration % 3600) / 60);
             if (m < 10) { m = '0' + m.toString(); }
             var s = (duration % 60);
             if (s < 10) { s = '0' + s.toString(); }
             content += ' <div class="build-info">Finished at ' +
-                data['finish'].toLocaleFormat('%Y-%m-%d %H:%M:%S') +
+                finish.toLocaleFormat('%Y-%m-%d %H:%M:%S')  +
                 ' (duration ' + h + ':' + m + ':' + s + ')</div>';
         }
 
@@ -78,75 +80,41 @@ $.ajax(\'/buildbot/build?builder=' + data['builder'] + '\')\
     else {
         content += ' <span>Build history is empty</span> ';
     }
-
+    console.log("1")
     content += '</div>';
     return content
 
 }
 
-function build_request(buildbot_url, builder, num, callback) {
-    $.getJSON(buildbot_url + "/json/builders/" + builder + "/builds/" + num + "?filter=1", function (data) {
-        var build = {};
-
-        build["builder"] = data["builderName"];
-        build["start"] = new Date(data["times"][0] * 1000);
-        build["num"] = data['number'];
-
-        if (data["times"][1] != null) {
-            build["finish"] = new Date(data["times"][1] * 1000);
+function last_builds_request(trac_url, builders, callback) {
+    $.ajax(trac_url + "/buildbot/json/lastbuilds",
+        {
+            dataType: "json",
+            data: { builders: builders.join() },
+            traditional: true
         }
-
-        try {
-            var rev = "";
-            data["properties"].forEach(function (prop) {
-                if (prop[0] == "got_revision" && prop[1] != null) {
-                    rev = prop[1];
-                }
-            });
-            build["rev"] = rev;
-        } catch (e) { };
-
-        var status = "running";
-        if ("text" in data) {
-            if (data["text"][0] == "failed") {
-                status = "failed";
-            }
-            else if (data["text"][1] == "successful") {
-                status = "successful";
-            }
-            else {
-                status = "unknown";
-            }
-        }
-        build["status"] = status;
-
-        if (status == 'failed') {
-            build["error"] = data['text'];
-        }
-
-        try {
-            data['steps'].forEach(function (step) {
-                if ("results" in step && step["results"][0] != 0 && step["results"][0] != 3) {
-                    build["error_log"] = step['logs'][0][1];
-                }
-            });
-        } catch (e) { };
-
-        callback(build);
-    }).fail(function () {
-    });
+    ).done(function (data) {
+        console.log("2")
+        console.log(data)
+        callback(data);
+    }).fail(function () {});
 };
 
 
-function load_last_build(builder) {
-    build_request(buildbot_url, builder, -1,
+function load_last_builds(builders) {
+    last_builds_request(trac_url, builders,
         function (data) {
-            if (builder in buildbot_sources && buildbot_sources[builder] != '') {
-                data['source'] = buildbot_sources[builder];
+            console.log("3")
+            var builder;
+            for (builder in data) {
+                console.log(builder)
+                if (builder in buildbot_sources && buildbot_sources[builder] != '') {
+                    data[builder]['source'] = buildbot_sources[builder];
+                }
+                var element = document.getElementById("builder_" + builder);
+                var content = gen_build_html(data[builder], buildbot_url, build_permisson);
+                element.innerHTML = content;
             }
-            var element = document.getElementById("builder_" + builder);
-            var content = gen_build_html(data, buildbot_url, build_permisson);
-            element.innerHTML = content;
         });
 };
 

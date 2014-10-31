@@ -25,3 +25,6 @@ def singleton(cls):
             instances[cls] = cls()
         return instances[cls]
     return getinstance
+
+def date_handler(obj):
+    return obj.isoformat() if hasattr(obj, 'isoformat') else obj

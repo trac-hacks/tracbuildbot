@@ -23,12 +23,10 @@
         buildbot_sources = {${sources}};
         builders = [${builders_str_list}];
         function refresh() {
-            builders.forEach(function (builder) {
-                load_last_build(builder)
-            });
+            load_last_builds(builders)
         };
         refresh();
-        var timer = setInterval(refresh, 5000);
+        var timer = setInterval(refresh, 30000);
     </script>
     <div class="build-list">
 	    <div py:for="builder in builders" class="project-wrapper" id="builder_${builder}">
