@@ -67,6 +67,7 @@ class BuildbotPage(Component, BuildbotSettings):
         add_stylesheet(req,'tracbuildbot/css/futu_alert.css')
         add_script(req,'tracbuildbot/js/futu_alert.js')
         add_script(req,'tracbuildbot/js/buildbot.js')
+        add_script(req,'tracbuildbot/js/mustache.js')
 
         trac_path = self.config.get('project','url')
         if not trac_path.startswith('http'):
@@ -101,8 +102,7 @@ class BuildbotJsonApiHandler(Component, BuildbotSettings):
             try:
                 build = bc.get_build(builder, -1)
             except Exception as e:
-                #last_builds[builder] = str(e)
-                pass
+                last_builds[builder] = str(e)
             else:
                 last_builds[builder] = build
 

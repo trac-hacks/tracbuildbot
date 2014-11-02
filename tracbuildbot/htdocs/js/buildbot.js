@@ -1,3 +1,4 @@
+
 if (!Date.prototype.toLocaleFormat) {
     Date.prototype.toLocaleFormat = function (format) {
         var f = {
@@ -15,75 +16,21 @@ if (!Date.prototype.toLocaleFormat) {
     }
 }
 
-function gen_build_html(data, bb_url, build_button) {
-    content = ' \
-        <div class="project-header" style="width: 100%;"> \
-        ' + data['builder'];
+function buildbot_build(builder){
+    $.ajax("/buildbot/build?builder=" + builder
+    ).done(function( result, status ) {
+        futu_alert("Build " + builder, status + result);
+    }).fail(function( jqXHR, textStatus ){
+        futu_alert("Build " + builder, jqXHR.responseText, true, "error"); 
+    });
+}
 
-    if (build_button) {
-        content += ' \
-        <input style="margin-left: 10px;" type="button" name="build" value="Build" \
-        onclick="\
-$.ajax(\'/buildbot/build?builder=' + data['builder'] + '\')\
-.done(function( result, status ) { futu_alert(\'Build ' + data['builder'] + '\', status + result); })\
-.fail(function( jqXHR, textStatus ) { futu_alert(\'Build ' + data['builder'] + '\', jqXHR.responseText, true, \'error\'); });\
-"/>';
-    }
-
-    content += ' </div> \
-    <div class="inner-build"> ';
-
-    if ('status' in data) {
-        content += ' \
-        <div class="build-info">Last build \
-            <a href="' + bb_url + '/builders/' + data['builder'] + '/builds/' + data['num'] + '">' + data['num'] + '</a>: \
-            <span class="' + data['status'] + '_build">' + data['status'] + '</span> \
-        </div>';
-
-        if (data['status'] == 'failed') {
-            content += '<div class="build-info">' + data['error'];
-            if ('error_log' in data) {
-                content += ' <a href="' + data['error_log'] + '">Log</a>';
-            }
-            content += '</div> ';
-        }
-
-        content += " <br/>";
-
-        var start = new Date(data['start'])
-        content += '<div class="build-info">Started at ' +
-            start.toLocaleFormat('%Y-%m-%d %H:%M:%S') + '</div> ';
-
-        if ('finish' in data && data['finish'] != null) {
-            var finish = new Date(data['finish'])
-            var duration = Math.floor((finish - start) / 1000);
-            var h = Math.floor(duration / 3600);
-            var m = Math.floor((duration % 3600) / 60);
-            if (m < 10) { m = '0' + m.toString(); }
-            var s = (duration % 60);
-            if (s < 10) { s = '0' + s.toString(); }
-            content += ' <div class="build-info">Finished at ' +
-                finish.toLocaleFormat('%Y-%m-%d %H:%M:%S')  +
-                ' (duration ' + h + ':' + m + ':' + s + ')</div>';
-        }
-
-        if ('rev' in data && data['rev'] != "" && 'source' in data) {
-            content += ' <div class="build-info">Revision: \
-                            <a href="' + trac_url + '/browser/' + data['source'] + '/?rev=' + data['rev'] + '"> \
-                                ' + data['rev'].substring(0,7) + '</a> \
-                            <a href="' + trac_url + '/changeset/' + data['rev'] + '/' + data['source'] + '" \
-                                ><img src="' + trac_url + '/chrome/common/changeset.png"/></a> \
-                        </div> ';
-        }
-
-    }
-    else {
-        content += ' <span>Build history is empty</span> ';
-    }
-    console.log("1")
-    content += '</div>';
-    return content
-
+function gen_build_html(data) {
+    var builder = $("[id='builder_" + data["builder"] + "']");
+    var template = $("#build-template").text();
+    var output = Mustache.render(template, data);
+    builder.empty();
+    builder.append(output);
 }
 
 function last_builds_request(trac_url, builders, callback) {
@@ -94,26 +41,44 @@ function last_builds_request(trac_url, builders, callback) {
             traditional: true
         }
     ).done(function (data) {
-        console.log("2")
-        console.log(data)
         callback(data);
-    }).fail(function () {});
+    }).fail(function (data) {
+        console.log(data);
+    });
 };
 
 
-function load_last_builds(builders) {
-    last_builds_request(trac_url, builders,
-        function (data) {
-            console.log("3")
-            var builder;
-            for (builder in data) {
-                console.log(builder)
-                if (builder in buildbot_sources && buildbot_sources[builder] != '') {
-                    data[builder]['source'] = buildbot_sources[builder];
+function load_last_builds(builders, context) {
+    buildbot_sources = context.buildbot_sources;
+
+    last_builds_request(context.trac_url, builders,
+        function (builders) {
+            for (builder_name in builders) {
+                var builder = builders[builder_name];
+
+                var data = {};
+                if (typeof builder != "string") {
+                    if (builder_name in buildbot_sources && buildbot_sources[builder_name] != '') {
+                        builder['source'] = buildbot_sources[builder_name];
+                    }
+
+                    var start = new Date(builder.start);
+                    var finish = new Date(builder.finish);
+                    $.extend(data, context, builder, {
+                        status_failed: builder["status"] == "failed",
+                        start_str: start.toLocaleFormat('%Y-%m-%d %H:%M:%S'),
+                        finish_str: finish.toLocaleFormat('%Y-%m-%d %H:%M:%S'),
+                        duration: new Date(finish - start + start.getTimezoneOffset() * 60000).toLocaleFormat('%H:%M:%S'),
+                        rev: "rev" in builder ? builder["rev"].substring(0, 7) : "",
+                    });
                 }
-                var element = document.getElementById("builder_" + builder);
-                var content = gen_build_html(data[builder], buildbot_url, build_permisson);
-                element.innerHTML = content;
+                else {
+                    data = {
+                        builder: builder_name,
+                        request_error: builder,
+                    };
+                }
+                gen_build_html(data);
             }
         });
 };

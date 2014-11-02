@@ -119,12 +119,12 @@ class BuildbotConnection(Singleton):
         build = dict({
                 'builder': data['builderName'],
                 'status': status,
-                'start' : datetime.fromtimestamp(int(data['times'][0])),
+                'start' : datetime.utcfromtimestamp(int(data['times'][0])),
                 'num': data['number'],
                 })
 
         if len(data['times']) > 1 and type(data['times'][1]) == float:
-            build['finish'] = datetime.fromtimestamp(int(data['times'][1]))
+            build['finish'] = datetime.utcfromtimestamp(int(data['times'][1]))
 
         for prop in data['properties']:
             if prop[0] == 'got_revision' and prop[1] != "":

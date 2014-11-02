@@ -26,7 +26,8 @@ setup(
     buildbot.env = tracbuildbot.environmentSetup
     """,
     package_data={'tracbuildbot': ['templates/*.html',
-                                            'htdocs/css/*.css',
-                                            'htdocs/img/*.gif',
-                                            'htdocs/js/*.js',]},
+                                   'htdocs/css/*.css',
+                                   'htdocs/img/*.gif',
+                                   'htdocs/js/*.js',
+                                  ]},
 )

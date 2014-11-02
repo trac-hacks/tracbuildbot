@@ -7,23 +7,77 @@
   <xi:include href="layout.html" />
   <xi:include href="macros.html" />
 <head>
-<title>Buildbot Builds</title>
+    <title>Buildbot Builds</title>
+    <script id="build-template" type="text/html">
+        <div class="project-header" style="width: 100%;">
+            {{builder}}
+            {{#build_permisson}}
+                <input style="margin-left: 10px;" type="button" name="build" value="Build"
+                       onclick="buildbot_build('{{builder}}')" />
+            {{/build_permisson}}
+        </div>
+        <div class="inner-build">
+            {{#request_error}}
+                <div class="build-info">
+                    {{request_error}}
+                </div>
+            {{/request_error}}
+            {{^request_error}}
+                {{#status}}
+                    <div class="build-info">
+                        Last build
+                        <a href="${bb_url}/builders/{{builder}}/builds/{{num}}">{{num}}</a>:
+                        <span class="{{status}}_build">{{status}}</span>
+                    </div>
+                    {{#status_failed}}
+                        <div class="build-info">
+                            {{error}}
+                            {{#error_log}}
+                                <a href="{{error_log}}">Log</a>
+                            {{/error_log}}
+                        </div>
+                    {{/status_failed}}
+                    <br />
+                    <div class="build-info">Started at {{start_str}}</div>
+                    {{#finish}}
+                        <div class="build-info">
+                            Finished at {{finish_str}}
+                            (duration {{duration}})
+                        </div>
+                    {{/finish}}
+                    {{#rev}}
+                    {{#source}}
+                        <div class="build-info">Revision: 
+                                <a href="{{trac_url}}/browser/{{source}}/?rev={{rev}}"> {{rev}}</a>
+                                <a href="{{trac_url}}/changeset/{{rev}}/{{source}}" >
+                                    <img src="{{trac_url}}/chrome/common/changeset.png"/>
+                                </a>
+                            </div> 
+                    {{/source}}
+                    {{/rev}}
+                {{/status}}
+            {{/request_error}}
+        </div>
+    </script>
 </head>
 <body>
-    <h1>Buildbot Builds:</h1>
+    <h1>Buildbot last builds:</h1>
+    <span style="float:right; font-size: 10px; margin-top: -12px">see other builds in <a href="${trac_url}/timeline">Timeline</a></span>
     <py:choose>
         <py:when test="errors">
             <div class="system-message">${errors}</div>
 		</py:when>
     </py:choose>
     <script type="text/javascript">
-        buildbot_url = '${buildbot_url}';
-        trac_url = '${trac_url}';
-        build_permisson = ${view_build_buttons};
-        buildbot_sources = {${sources}};
+        var context = {
+            bb_url: '${buildbot_url}',
+            trac_url: '${trac_url}',
+            build_permisson: ${view_build_buttons},
+            buildbot_sources: {${sources}},
+        };
         builders = [${builders_str_list}];
         function refresh() {
-            load_last_builds(builders)
+            load_last_builds(builders, context)
         };
         refresh();
         var timer = setInterval(refresh, 30000);
