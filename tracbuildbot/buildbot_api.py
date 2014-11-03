@@ -17,8 +17,13 @@ import re
 from tools import Singleton
 
 class BuildbotException(Exception):
-    def __init__(self, args):
-        Exception.__init__(self, args)
+    pass
+
+class BuildbotConnectionException(BuildbotException):
+    pass
+
+class BuildbotRequestException(BuildbotException):
+    pass
 
 class BuildbotConnection(Singleton):
     headers = {'connection': 'Keep-Alive',
@@ -49,7 +54,7 @@ class BuildbotConnection(Singleton):
             elif protocol == "https":
                 self.connection = httplib.HTTPSConnection(server)
             else:
-                raise BuildbotException("Request failed - unknown protocol")
+                raise BuildbotConnectionException("Request failed - unknown protocol")
             self.pre_path = pre_path if pre_path else ""
 
     def _request(self, path, method="GET", **kwagrs):
@@ -75,11 +80,11 @@ class BuildbotConnection(Singleton):
                 reconnect_try += 1
                 continue
             except (socket.error, httplib.HTTPException) as e:
-                raise BuildbotException("Request %s failed %s: %s" % (path, "%s.%s" % (e.__module__, type(e).__name__), e))
+                raise BuildbotConnectionException("Request %s failed %s: %s" % (path, "%s.%s" % (e.__module__, type(e).__name__), e))
             break
 
         if r and not (200 <= r.status < 400):
-            raise BuildbotException("Request %s failed (%s %s)" % (path, r.status, r.reason))
+            raise BuildbotRequestException("Request %s failed (%s %s)" % (path, r.status, r.reason))
 
         return r
 
@@ -144,7 +149,16 @@ class BuildbotConnection(Singleton):
         return build
 
     def get_build(self, builder, num):
-        res = self._request("/json/builders/%s/builds/%d" % (builder, num))
+        try:
+            res = self._request("/json/builders/%s/builds/%d" % (builder, num))
+        except BuildbotRequestException:
+            res = self._request("/json/builders/%s" % (builder))
+            data = json.loads(res.read())
+            print(data)
+            if not "cachedBuilds" in data or len(data["cachedBuilds"]) == 0:
+                raise BuildbotRequestException("No builds")
+            else:
+                raise
         return self._parse_build(res)
 
 
