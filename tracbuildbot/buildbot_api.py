@@ -14,8 +14,6 @@ from datetime import datetime
 import time
 import re
 
-from tools import Singleton
-
 class BuildbotException(Exception):
     pass
 
@@ -25,12 +23,11 @@ class BuildbotConnectionException(BuildbotException):
 class BuildbotRequestException(BuildbotException):
     pass
 
-class BuildbotConnection(Singleton):
+class BuildbotConnector:
     headers = {'connection': 'Keep-Alive',
                'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'}
     user=""
     password=""
-    max_request_try = 2
     pre_path = ""
 
     def __init__(self, url=None):
@@ -154,7 +151,6 @@ class BuildbotConnection(Singleton):
         except BuildbotRequestException:
             res = self._request("/json/builders/%s" % (builder))
             data = json.loads(res.read())
-            print(data)
             if not "cachedBuilds" in data or len(data["cachedBuilds"]) == 0:
                 raise BuildbotRequestException("No builds")
             else:

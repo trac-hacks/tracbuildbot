@@ -22,8 +22,8 @@ from trac.perm import IPermissionRequestor
 from trac.web.chrome import INavigationContributor, ITemplateProvider
 from trac.web.chrome import add_script, add_stylesheet
 
-from admin import BuildbotSettings
-from buildbot_api import BuildbotConnection, BuildbotException
+from buildbot_api import BuildbotException
+from buildbot_provider import BuildbotProvider
 import tools
 
 class BuildbotChrome(Component):
@@ -39,7 +39,7 @@ class BuildbotChrome(Component):
         return [pkg_resources.resource_filename(__name__, 'templates')]
 
 
-class BuildbotPage(Component, BuildbotSettings):
+class BuildbotPage(Component, BuildbotProvider):
     """Renders pages with build results."""
     implements(IRequestHandler,INavigationContributor)
 
@@ -85,7 +85,7 @@ class BuildbotPage(Component, BuildbotSettings):
                                         'sources': sources,
                                         }, None
 
-class BuildbotJsonApiHandler(Component, BuildbotSettings):
+class BuildbotJsonApiHandler(Component, BuildbotProvider):
     """Renders pages with build results."""
     implements(IRequestHandler)
 
@@ -95,12 +95,12 @@ class BuildbotJsonApiHandler(Component, BuildbotSettings):
 
     def process_request(self, req):
         options = self._get_options()
-        bc = BuildbotConnection(options['base_url'])
+        connector = self.get_connector()
         last_builds = dict()
         builders = req.args['builders'].split(',')
         for builder in builders:
             try:
-                build = bc.get_build(builder, -1)
+                build = connector.get_build(builder, -1)
             except Exception as e:
                 last_builds[builder] = str(e)
             else:
@@ -113,7 +113,7 @@ class BuildbotJsonApiHandler(Component, BuildbotSettings):
         req.end_headers()
         req.write(content)
 
-class BuildbotBuildHandler(Component, BuildbotSettings):
+class BuildbotBuildHandler(Component, BuildbotProvider):
     implements(IRequestHandler)
 
     #IRequestHandler methods
@@ -127,10 +127,10 @@ class BuildbotBuildHandler(Component, BuildbotSettings):
         builder = req.args['builder']
         options = self._get_options()
 
-        bc = BuildbotConnection(options['base_url'])
+        connector = self.get_connector()
         try:
-            bc.login(options['username'], options['password'])
-            bc.build(builder)
+            connector.login(options['username'], options['password'])
+            connector.build(builder)
         except BuildbotException as e:
             content = str(e)
             req.send_response(500)

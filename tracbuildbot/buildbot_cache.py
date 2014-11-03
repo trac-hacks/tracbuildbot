@@ -6,9 +6,8 @@ import traceback
 from trac.env import Environment
 from trac.db.api import get_column_names
 
-from buildbot_api import BuildbotConnection, BuildbotException
+from buildbot_api import BuildbotConnector, BuildbotException
 import environmentSetup
-from tools import Singleton
 
 
 last_cached_query = "SELECT MAX(num) FROM buildbot_builds WHERE builder=%s"
@@ -22,21 +21,21 @@ class BuildbotCacheException(BuildbotException):
     pass
 
 
-class BuildbotCache(Singleton):
-    def __init__(self, env):
+class BuildbotCache:
+    def __init__(self, env, connector):
         self.env = env
-        self.connection = BuildbotConnection()
+        self.connector = connector
         self.fields = [col.name for col in environmentSetup.table.columns]
 
     def connect_to(self, url):
-        self.connection.connect_to(url)
+        self.connector.connect_to(url)
 
     def cache(self, builders):
         for builder in builders:
             self.cache_builder(builder)
 
     def cache_builder(self, builder):
-        last_build_num = self.connection.get_build(builder, -1)['num']
+        last_build_num = self.connector.get_build(builder, -1)['num']
         with self.env.db_transaction as db:
             cursor = db.cursor()
 
@@ -51,7 +50,7 @@ class BuildbotCache(Singleton):
 
             for num in xrange(last_cached_num + 1, last_build_num + 1):
                 try:
-                    build = self.connection.get_build(builder, num)
+                    build = self.connector.get_build(builder, num)
                 except BuildbotException as e:
                     self.env.log.error(e)
                     continue
@@ -94,7 +93,7 @@ class BuildbotCache(Singleton):
 
 def async_buildbot_cache_init(env_path):
     global cache
-    cache = BuildbotCache(Environment(env_path))
+    cache = BuildbotCache(Environment(env_path), BuildbotConnector())
 
 def async_buildbot_cache_worker(url, builders):
     global cache
@@ -105,15 +104,15 @@ def async_buildbot_cache_worker(url, builders):
             try:
                 cache.cache_builder(builder)
             except BuildbotException as e:
-                cache.env.log.error(e)
+                cache.env.log.error("builder %s - %s " % (builder, e))
         cache.env.log.debug('cache finished')
     except Exception:
         cache.env.log.error(traceback.format_exc())
 
 
-class DeferredBuildbotCache(Singleton):
-    def __init__(self, env):
-        self.sync_cache = BuildbotCache(env)
+class DeferredBuildbotCache:
+    def __init__(self, env, connector):
+        self.sync_cache = BuildbotCache(env, connector)
         self.pool = Pool(1, async_buildbot_cache_init, (env.path,))
 
     def __del__(self):
@@ -123,7 +122,7 @@ class DeferredBuildbotCache(Singleton):
         return getattr(self.sync_cache, name)
 
     def cache(self, builders):
-        result = self.pool.apply_async(async_buildbot_cache_worker, (self.connection.url, builders))
+        result = self.pool.apply_async(async_buildbot_cache_worker, (self.connector.url, builders))
         result.wait(3)
 
     def stop(self):

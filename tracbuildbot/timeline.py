@@ -18,18 +18,13 @@ from trac.web.chrome import add_script, add_stylesheet
 from trac.util.datefmt import localtz
 from genshi.builder import tag
 
-from admin import BuildbotSettings
-from buildbot_api import BuildbotConnection, BuildbotException
-from buildbot_cache import DeferredBuildbotCache
+from buildbot_api import BuildbotException
+from buildbot_provider import BuildbotProvider
 
 
-class BuildbotTimeline(Component, BuildbotSettings):
+class BuildbotTimeline(Component, BuildbotProvider):
     """Provides timeline events"""
     implements(ITimelineEventProvider)
-
-    def __del__(self):
-        self.cache.stop()
-
 
     # ITimelineEventProvider methods
     def get_timeline_filters(self, req):
@@ -53,17 +48,14 @@ class BuildbotTimeline(Component, BuildbotSettings):
             return
 
         all_builds = []
+        builders = options['timeline_builders']
         try:
             if not options or not 'base_url' in options:
                 raise BuildbotException('Base url is required')
 
-            self.cache = DeferredBuildbotCache(self.env)
-            self.cache.connect_to(options['base_url'])
-
-            builders = options['timeline_builders']
-            self.cache.cache(builders)
-
-            all_builds = self.cache.get_builds(builders, start, stop)
+            cache = self.get_cache()
+            cache.cache(builders)
+            all_builds = cache.get_builds(builders, start, stop)
         except BuildbotException as e:
             self.log.error("tracbuildbot: fail to get builds %s" % e)
             return 
