@@ -19,7 +19,7 @@ if (!Date.prototype.toLocaleFormat) {
 function buildbot_build(builder){
     $.ajax("/buildbot/build?builder=" + builder
     ).done(function( result, status ) {
-        futu_alert("Build " + builder, status + result);
+        futu_alert("Build " + builder, result + " " + status);
     }).fail(function( jqXHR, textStatus ){
         futu_alert("Build " + builder, jqXHR.responseText, true, "error"); 
     });
