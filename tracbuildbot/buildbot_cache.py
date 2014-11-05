@@ -36,59 +36,63 @@ class BuildbotCache:
 
     def cache_builder(self, builder):
         last_build_num = self.connector.get_build(builder, -1)['num']
-        with self.env.db_transaction as db:
-            cursor = db.cursor()
+        db = self.env.get_db_cnx()
 
-            cursor.execute(last_cached_query, [builder])
-            last_cached_num = None
+        cursor = db.cursor()
+
+        cursor.execute(last_cached_query, [builder])
+        last_cached_num = None
+        try:
+            last_cached_num = iter(cursor).next()[0]
+        except StopIteration:
+            return
+        if last_cached_num == None: last_cached_num = -1            
+
+
+        for num in xrange(last_cached_num + 1, last_build_num + 1):
             try:
-                last_cached_num = iter(cursor).next()[0]
-            except StopIteration:
-                return
-            if last_cached_num == None: last_cached_num = -1            
+                build = self.connector.get_build(builder, num)
+            except BuildbotException as e:
+                self.env.log.error(e)
+                continue
 
+            query_build = dict()
+            try:
+                for key, val in build.items():
+                    if not key in self.fields: continue
 
-            for num in xrange(last_cached_num + 1, last_build_num + 1):
-                try:
-                    build = self.connector.get_build(builder, num)
-                except BuildbotException as e:
-                    self.env.log.error(e)
-                    continue
+                    if type(val) in (str, unicode):
+                        query_build[key] = "'%s'" % val
+                    elif type(val) == int:
+                        query_build[key] = str(int(val))
+                    elif type(val) == datetime:
+                        query_build[key] = str(time.mktime(val.timetuple()))
+                    else:
+                        raise BuildbotCacheException('unknown type %s - %s' % (key, val))
+            except BuildbotCacheException as e:
+                self.env.log.error(e)
+                continue
 
-                query_build = dict()
-                try:
-                    for key, val in build.items():
-                        if not key in self.fields: continue
+            cursor.execute(save_build_query % (','.join(query_build.keys()),
+                                                ','.join(query_build.values())))
 
-                        if type(val) in (str, unicode):
-                            query_build[key] = "'%s'" % val
-                        elif type(val) == int:
-                            query_build[key] = str(int(val))
-                        elif type(val) == datetime:
-                            query_build[key] = str(time.mktime(val.timetuple()))
-                        else:
-                            raise BuildbotCacheException('unknown type %s - %s' % (key, val))
-                except BuildbotCacheException as e:
-                    self.env.log.error(e)
-                    continue
-
-                cursor.execute(save_build_query % (','.join(query_build.keys()),
-                                                  ','.join(query_build.values())))
+            db.commit()
 
     def get_builds(self, builders, start, stop):
         start = str(int(time.mktime(start.timetuple())))
         stop = str(int(time.mktime(stop.timetuple())))
-        with self.env.db_transaction as db:
-            cursor = db.cursor()
-            cursor.execute(get_builds_query %
-                           (start, stop, ','.join(["'%s'" % builder for builder in builders])))
-            fields = get_column_names(cursor)
-            return [dict(zip(fields, build)) for build in cursor]
+        db = self.env.get_db_cnx()
+
+        cursor = db.cursor()
+        cursor.execute(get_builds_query %
+                        (start, stop, ','.join(["'%s'" % builder for builder in builders])))
+        fields = get_column_names(cursor)
+        return [dict(zip(fields, build)) for build in cursor]
 
     def clear_cache(self):
-        with self.env.db_transaction as db:
-            cursor = db.cursor()
-            cursor.execute("DELETE FROM buildbot_builds")
+        db = self.env.get_db_cnx()
+        cursor = db.cursor()
+        cursor.execute("DELETE FROM buildbot_builds")
 
 
 def async_buildbot_cache_init(env_path):
