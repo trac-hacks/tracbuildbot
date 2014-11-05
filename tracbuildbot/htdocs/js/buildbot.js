@@ -34,17 +34,15 @@ function gen_build_html(data) {
 }
 
 function last_builds_request(trac_url, builders, callback) {
-    $.ajax(trac_url + "/buildbot/json/lastbuilds",
-        {
-            dataType: "json",
-            data: { builders: builders.join() },
-            traditional: true
+    $.ajax({
+        url: trac_url + "/buildbot/json/lastbuilds",
+        dataType: "json",
+        data: { builders: builders.join() },
+        traditional: true,
+        success: function (data) {
+            callback(data);
         }
-    ).done(function (data) {
-        callback(data);
-    }).fail(function (data) {
-        console.log(data);
-    });
+    })
 };
 
 
