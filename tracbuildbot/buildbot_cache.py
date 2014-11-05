@@ -10,13 +10,6 @@ from buildbot_api import BuildbotConnector, BuildbotException
 import environmentSetup
 
 
-last_cached_query = "SELECT MAX(num) FROM buildbot_builds WHERE builder=%s"
-save_build_query = "INSERT INTO buildbot_builds (%s) VALUES (%s)"
-get_builds_query = """SELECT *,finish-start AS duration FROM buildbot_builds
-                      WHERE finish >= %s AND finish <= %s AND builder IN (%s)
-                   """
-
-
 class BuildbotCacheException(BuildbotException):
     pass
 
@@ -39,7 +32,7 @@ class BuildbotCache:
         with self.env.db_transaction as db:
             cursor = db.cursor()
 
-            cursor.execute(last_cached_query, [builder])
+            cursor.execute("SELECT MAX(num) FROM buildbot_builds WHERE builder=%s", [builder])
             last_cached_num = None
             try:
                 last_cached_num = iter(cursor).next()[0]
@@ -72,15 +65,19 @@ class BuildbotCache:
                     self.env.log.error(e)
                     continue
 
-                cursor.execute(save_build_query % (','.join(query_build.keys()),
-                                                  ','.join(query_build.values())))
+                cursor.execute("INSERT INTO buildbot_builds (%s) VALUES (%s)" %
+                               (','.join(query_build.keys()), ','.join(query_build.values())))
 
     def get_builds(self, builders, start, stop):
         start = str(int(time.mktime(start.timetuple())))
         stop = str(int(time.mktime(stop.timetuple())))
-        with self.env.db_transaction as db:
+        with self.env.db_query as db:
             cursor = db.cursor()
-            cursor.execute(get_builds_query %
+
+            cursor.execute("""
+                           SELECT *,finish-start AS duration FROM buildbot_builds
+                           WHERE finish >= %s AND finish <= %s AND builder IN (%s)
+                           """ %
                            (start, stop, ','.join(["'%s'" % builder for builder in builders])))
             fields = get_column_names(cursor)
             return [dict(zip(fields, build)) for build in cursor]
