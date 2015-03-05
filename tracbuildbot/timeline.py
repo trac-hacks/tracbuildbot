@@ -10,12 +10,10 @@
 import os
 import re
 import urlparse
-from datetime import datetime
 
 from trac.core import *
 from trac.timeline import ITimelineEventProvider
 from trac.web.chrome import add_script, add_stylesheet
-from trac.util.datefmt import localtz
 from genshi.builder import tag
 
 from buildbot_api import BuildbotException
@@ -62,7 +60,7 @@ class BuildbotTimeline(Component, BuildbotProvider):
 
         add_stylesheet(req,'tracbuildbot/css/buildbot.css')
         for build in all_builds:
-            timestamp = datetime.fromtimestamp(build['finish']).replace(tzinfo=localtz)
+            timestamp = build['finish']
             build["source"] = options['sources'].get(build['builder'])
             build["url"] = ("%s/builders/%s/builds/%s" % 
                 (options['base_url'], build['builder'], build['num']))

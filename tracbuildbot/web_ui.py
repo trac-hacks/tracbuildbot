@@ -16,6 +16,7 @@ import json
 import pkg_resources
 from trac.core import *
 from trac.util.html import html
+from trac.util.datefmt import pretty_timedelta, format_datetime
 from trac.web import HTTPNotFound, HTTPBadGateway, HTTPForbidden
 from trac.web.main import IRequestHandler
 from trac.perm import IPermissionRequestor
@@ -24,7 +25,6 @@ from trac.web.chrome import add_script, add_stylesheet
 
 from buildbot_api import BuildbotException
 from buildbot_provider import BuildbotProvider
-import tools
 
 class BuildbotChrome(Component):
     """Provides plugin templates and static resources."""
@@ -98,15 +98,20 @@ class BuildbotJsonApiHandler(Component, BuildbotProvider):
         connector = self.get_connector()
         last_builds = dict()
         builders = req.args['builders'].split(',')
+
         for builder in builders:
             try:
                 build = connector.get_build(builder, -1)
+                if "finish" in build and build["finish"]:
+                    build["duration"] = pretty_timedelta(build["finish"], build["start"])
+                    build["finish"] = format_datetime(build['finish'], tzinfo=req.tz)
+                build["start"] = format_datetime(build['start'], tzinfo=req.tz)
             except Exception as e:
                 last_builds[builder] = str(e)
             else:
                 last_builds[builder] = build
 
-        content = json.dumps(last_builds, default=tools.date_handler)
+        content = json.dumps(last_builds)
 
         req.send_header('Content-Type', 'application/javascript')
         req.send_header('Content-Length', len(content))

@@ -5,6 +5,7 @@ import traceback
 
 from trac.env import Environment
 from trac.db.api import get_column_names
+from trac.util.datefmt import to_datetime, to_timestamp
 
 from buildbot_api import BuildbotConnector, BuildbotException
 import environmentSetup
@@ -58,7 +59,7 @@ class BuildbotCache:
                         elif type(val) == int:
                             query_build[key] = str(int(val))
                         elif type(val) == datetime:
-                            query_build[key] = str(time.mktime(val.timetuple()))
+                            query_build[key] = str(to_timestamp(val))
                         else:
                             raise BuildbotCacheException('unknown type %s - %s' % (key, val))
                 except BuildbotCacheException as e:
@@ -80,7 +81,17 @@ class BuildbotCache:
                            """ %
                            (start, stop, ','.join(["'%s'" % builder for builder in builders])))
             fields = get_column_names(cursor)
-            return [dict(zip(fields, build)) for build in cursor]
+
+            builds = []
+            for build in cursor:
+                build_info = dict(zip(fields, build))
+                if "start" in build_info and build_info["start"]:
+                    build_info["start"] = to_datetime(build_info["start"])
+                if "finish" in build_info and build_info["finish"]:
+                    build_info["finish"] = to_datetime(build_info["finish"])
+
+                builds.append(build_info)
+        return builds
 
     def clear_cache(self):
         with self.env.db_transaction as db:

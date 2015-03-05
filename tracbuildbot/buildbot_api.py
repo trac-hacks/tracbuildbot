@@ -11,6 +11,7 @@ import httplib
 import json
 import urllib
 from datetime import datetime
+from trac.util.datefmt import to_datetime, utc
 import time
 import re
 
@@ -121,12 +122,12 @@ class BuildbotConnector:
         build = dict({
                 'builder': data['builderName'],
                 'status': status,
-                'start' : datetime.utcfromtimestamp(int(data['times'][0])),
+                'start' : to_datetime(int(data['times'][0]), utc),
                 'num': data['number'],
                 })
 
         if len(data['times']) > 1 and type(data['times'][1]) == float:
-            build['finish'] = datetime.utcfromtimestamp(int(data['times'][1]))
+            build['finish'] = to_datetime(int(data['times'][1]), utc)
 
         for prop in data['properties']:
             if prop[0] == 'got_revision' and prop[1] != "":
