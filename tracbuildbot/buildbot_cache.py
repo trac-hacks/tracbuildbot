@@ -3,7 +3,7 @@ import time
 from multiprocessing import Pool
 import traceback
 
-from trac.env import Environment
+from trac.env import open_environment
 from trac.db.api import get_column_names
 from trac.util.datefmt import to_datetime, to_timestamp
 
@@ -101,7 +101,7 @@ class BuildbotCache:
 
 def async_buildbot_cache_init(env_path):
     global cache
-    cache = BuildbotCache(Environment(env_path), BuildbotConnector())
+    cache = BuildbotCache(open_environment(env_path, use_cache=True), BuildbotConnector())
 
 def async_buildbot_cache_worker(url, builders):
     global cache
