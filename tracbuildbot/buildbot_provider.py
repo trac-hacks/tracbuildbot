@@ -36,55 +36,53 @@ class BuildbotProvider:
                 'timeline_builders': self.config.getlist('buildbot','timeline_builders'),
                 'sources'          : dict([tuple(builder.split('=')) for builder in
                                            self.config.getlist('buildbot','sources')]),
+                'force_regex'      : self.config.get('buildbot','force_regex'),
             })
+
 
     def _save_options(self, args):
         errors = []
-        new_options = {}
-        if args.get('base_url',False):
-            if args['base_url'][-1] == '/': # remove trailing slash
-                args['base_url'] = args['base_url'][:-1]
-            new_options['base_url'] = args['base_url']
-        else:
-            errors.append('Base url is required')
-        if args.get('username',False):
-            new_options['username'] = args['username']
-        else:
-            errors.append('Username is required')
-        if args.get('password',False):
-            new_options['password'] = args['password']
-        else:
-            errors.append('Password is required')
+        options = {}
 
-        if args.get('page_builders', False):
-            if type(args['page_builders']) is list:
-                new_options['page_builders'] = args['page_builders']
-            else:
-                builder = args['page_builders']
-                new_options['page_builders'] = [builder]
-        else:
-            new_options['page_builders'] = []
+        def save_str_option(option_name, required=False, label=None):
+            if args.get(option_name, False):
+                options[option_name] = args[option]
+            elif required:
+                errors.append('%s is required ' % (label if label else option))
 
-        if args.get('timeline_builders', False):
-            if type(args['timeline_builders']) is list:
-                new_options['timeline_builders'] = args['timeline_builders']
+        def save_list_option(option_name):
+            if args.get(option_name, False):
+                if type(args[option_name]) is list:
+                    new_options[option_name] = args[option_name]
+                else:
+                    builder = args[option_name]
+                    options[option_name] = [option_name]
             else:
-                builder = args['timeline_builders']
-                new_options['timeline_builders'] = [builder]
-        else:
-            new_options['timeline_builders'] = []
+                options[option_name] = []
+
+
+        save_str_option('base_url', required=True)
+        if 'base_url' in options:
+            options['base_url'].strip("/")
+
+        save_str_option('username')
+        save_str_option('password')
+        save_list_option('page_builders')
+        save_list_option('timeline_builders')
 
         sources = dict()
+        source_postfix = '_source'
         for name, value in args.iteritems():
-            if name.endswith('_source'):
-                sources[name[:-7]] = value
-        new_options['sources'] = [builder + "=" + source
-                                  for builder, source in sources.iteritems()]
+            if name.endswith(source_postfix):
+                sources[name[:-len(source_postfix)]] = value
+        options['sources'] = [builder + "=" + source
+                              for builder, source in sources.iteritems()]
 
+        # check and save 
         if not errors:
             for key,value in new_options.items():
                 if type(value) is list:
                     value = ",".join(value)
                 self.config.set('buildbot',key,value)
             self.config.save()
-        return new_options,errors
+        return options, errors
