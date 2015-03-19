@@ -33,7 +33,8 @@ class BuildbotCache:
         with self.env.db_transaction as db:
             cursor = db.cursor()
 
-            cursor.execute("SELECT MAX(num) FROM buildbot_builds WHERE builder=%s", [builder])
+            cursor.execute("SELECT MAX(num) FROM buildbot_builds WHERE builder=%s",
+                           [builder])
             last_cached_num = None
             try:
                 last_cached_num = iter(cursor).next()[0]
@@ -54,20 +55,23 @@ class BuildbotCache:
                     for key, val in build.items():
                         if not key in self.fields: continue
 
-                        if type(val) in (str, unicode):
-                            query_build[key] = "'%s'" % val
-                        elif type(val) == int:
-                            query_build[key] = str(int(val))
+                        if type(val) in (str, unicode, int):
+                            query_build[key] = val
                         elif type(val) == datetime:
-                            query_build[key] = str(to_timestamp(val))
+                            query_build[key] = int(to_timestamp(val))
                         else:
                             raise BuildbotCacheException('unknown type %s - %s' % (key, val))
                 except BuildbotCacheException as e:
                     self.env.log.error(e)
                     continue
 
+                columns = query_build.keys()
+                values = query_build.values()
+
                 cursor.execute("INSERT INTO buildbot_builds (%s) VALUES (%s)" %
-                               (','.join(query_build.keys()), ','.join(query_build.values())))
+                               (",".join(columns),
+                                ",".join(["%s"] * len(columns))),
+                               values)
 
     def get_builds(self, builders, start, stop):
         start = str(int(time.mktime(start.timetuple())))
@@ -77,9 +81,10 @@ class BuildbotCache:
 
             cursor.execute("""
                            SELECT *,finish-start AS duration FROM buildbot_builds
-                           WHERE finish >= %s AND finish <= %s AND builder IN (%s)
-                           """ %
-                           (start, stop, ','.join(["'%s'" % builder for builder in builders])))
+                           WHERE finish >= %%s AND finish <= %%s AND builder IN (%s)
+                           """ % ",".join(["%s"] * len(builders)),
+                           [start, stop] + builders)
+
             fields = get_column_names(cursor)
 
             builds = []
