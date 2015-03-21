@@ -46,14 +46,14 @@ class BuildbotProvider:
 
         def save_str_option(option_name, required=False, label=None):
             if args.get(option_name, False):
-                options[option_name] = args[option]
+                options[option_name] = args[option_name]
             elif required:
-                errors.append('%s is required ' % (label if label else option))
+                errors.append('%s is required ' % (label if label else option_name))
 
         def save_list_option(option_name):
             if args.get(option_name, False):
                 if type(args[option_name]) is list:
-                    new_options[option_name] = args[option_name]
+                    options[option_name] = args[option_name]
                 else:
                     builder = args[option_name]
                     options[option_name] = [option_name]
@@ -80,7 +80,7 @@ class BuildbotProvider:
 
         # check and save 
         if not errors:
-            for key,value in new_options.items():
+            for key,value in options.items():
                 if type(value) is list:
                     value = ",".join(value)
                 self.config.set('buildbot',key,value)
