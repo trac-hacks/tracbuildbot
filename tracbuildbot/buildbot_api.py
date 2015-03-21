@@ -109,6 +109,7 @@ class BuildbotConnector:
         for scheduler in builder_info["schedulers"]:
             if re.match(forcescheduler_regex, scheduler):
                 forcescheduler = scheduler
+                break
         if not forcescheduler:
             raise BuildbotException("Can't find force scheduler for builder %s" % builder)
 
