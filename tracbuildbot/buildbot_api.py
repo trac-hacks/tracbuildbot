@@ -101,9 +101,19 @@ class BuildbotConnector:
         self.password = password
         return True
 
-    def build(self, builder):
+    def build(self, builder, forcescheduler_regex="force"):
+        r = self._request("/json/builders/%s" % builder)
+        builder_info = json.loads(r.read())
+
+        forcescheduler = None
+        for scheduler in builder_info["schedulers"]:
+            if re.match(forcescheduler_regex, scheduler):
+                forcescheduler = scheduler
+        if not forcescheduler:
+            raise BuildbotException("Can't find force scheduler for builder %s" % builder)
+
         r = self._request("/builders/%s/force" % builder, method="POST",
-                              reason='launched from trac', forcescheduler='force')
+                              reason='launched from trac', forcescheduler=forcescheduler)
         r.read()
         #if r.read().find('authfail'):
         #    if not self.login(self.user, self.password):
